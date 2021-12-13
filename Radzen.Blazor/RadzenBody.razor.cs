@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Radzen.Blazor
@@ -8,12 +9,13 @@ namespace Radzen.Blazor
     /// </summary>
     public partial class RadzenBody : RadzenComponentWithChildren
     {
+        static string defaultStyle = "margin-top: 51px; margin-bottom: 57px; margin-left:250px;";
         /// <summary>
         /// Gets or sets the style.
         /// </summary>
         /// <value>The style.</value>
         [Parameter]
-        public override string Style { get; set; } = "margin-top: 51px; margin-bottom: 57px; margin-left:250px;";
+        public override string Style { get; set; } = defaultStyle;
 
         /// <inheritdoc />
         protected override string GetComponentCssClass()
@@ -37,18 +39,40 @@ namespace Radzen.Blazor
         /// <returns>System.String.</returns>
         protected string GetStyle()
         {
-            var marginLeft = 250;
+            var style = new Dictionary<string, string>(CurrentStyle);
 
-            if (!string.IsNullOrEmpty(Style))
+            var marginLeft = style.ContainsKey("margin-left") ? style["margin-left"] : "250px";
+            var marginTop = style.ContainsKey("margin-top") ? style["margin-top"] : "51px";
+            var marginBottom = style.ContainsKey("margin-bottom") ? style["margin-bottom"] : "57px";
+
+            if (style.ContainsKey("margin-left"))
             {
-                var marginLeftStyle = Style.Split(';').Where(i => i.Split(':')[0].Contains("margin-left")).FirstOrDefault();
-                if (!string.IsNullOrEmpty(marginLeftStyle) && marginLeftStyle.Contains("px"))
-                {
-                    marginLeft = int.Parse(marginLeftStyle.Split(':')[1].Trim().Replace("px", "").Split('.')[0].Trim());
-                }
+                style["margin-left"] = Expanded ? "0px" : marginLeft;
+            }
+            else 
+            {
+                style.Add("margin-left", Expanded ? "0px" : marginLeft);
             }
 
-            return $"{Style}; margin-left: {(Expanded ? 0 : marginLeft)}px";
+            if (style.ContainsKey("margin-top"))
+            {
+                style["margin-top"] = marginTop;
+            }
+            else
+            {
+                style.Add("margin-top", marginTop);
+            }
+
+            if (style.ContainsKey("margin-bottom"))
+            {
+                style["margin-bottom"] = marginBottom;
+            }
+            else
+            {
+                style.Add("margin-bottom", marginBottom);
+            }
+
+            return $"{string.Join(";", style.Select(s => $"{s.Key}:{s.Value}"))}";
         }
 
         /// <summary>
