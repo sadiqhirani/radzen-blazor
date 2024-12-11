@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Radzen.Blazor.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,6 +54,20 @@ namespace Radzen.Blazor
         [Parameter]
         public LineType LineType { get; set; }
 
+        /// <summary>
+        /// Gets or sets the color range of the fill.
+        /// </summary>
+        /// <value>The color range of the fill.</value>
+        [Parameter]
+        public IList<SeriesColorRange> FillRange { get; set; }
+
+        /// <summary>
+        /// Gets or sets the color range of the stroke.
+        /// </summary>
+        /// <value>The color range of the stroke.</value>
+        [Parameter]
+        public IList<SeriesColorRange> StrokeRange { get; set; }
+
         /// <inheritdoc />
         public override string Color
         {
@@ -91,24 +106,53 @@ namespace Radzen.Blazor
             }
         }
 
+        /// <inheritdoc />
+        protected override string TooltipStyle(TItem item)
+        {
+            var style = base.TooltipStyle(item);
+
+            var index = Items.IndexOf(item);
+
+            if (index >= 0)
+            {
+                var color = PickColor(index, Fills, Fill, FillRange, Value(item));
+
+                if (color != null)
+                {
+                    style = $"{style}; border-color: {color};";
+                }
+            }
+
+            return style;
+        }
+
         private double BandWidth
         {
             get
             {
-                var availableWidth = Chart.CategoryScale.OutputSize - (Chart.CategoryAxis.Padding * 2);
-                var bands = VisibleColumnSeries.Cast<IChartColumnSeries>().Max(series => series.Count) + 2;
-                return availableWidth / bands;
+                var columnSeries = VisibleColumnSeries;
+
+                if (Chart.ColumnOptions.Width.HasValue)
+                {
+                    return Chart.ColumnOptions.Width.Value * columnSeries.Count + Chart.ColumnOptions.Margin * (columnSeries.Count - 1);
+                }
+                else
+                {
+                    var availableWidth = Chart.CategoryScale.OutputSize - (Chart.CategoryAxis.Padding * 2);
+                    var bands = columnSeries.Cast<IChartColumnSeries>().Max(series => series.Count) + 2;
+                    return availableWidth / bands;
+                }
             }
         }
 
         /// <inheritdoc />
         public override bool Contains(double x, double y, double tolerance)
         {
-            return DataAt(x, y) != null;
+            return DataAt(x, y).Item1 != null;
         }
 
         /// <inheritdoc />
-        protected override double TooltipX(TItem item)
+        internal override double TooltipX(TItem item)
         {
             var columnSeries = VisibleColumnSeries;
             var index = columnSeries.IndexOf(this);
@@ -122,17 +166,13 @@ namespace Radzen.Blazor
         }
 
         /// <inheritdoc />
-        protected override double TooltipY(TItem item)
+        internal override double TooltipY(TItem item)
         {
-            var y = base.TooltipY(item);
-            var ticks = Chart.ValueScale.Ticks(Chart.ValueAxis.TickDistance);
-            var y0 = Chart.ValueScale.Scale(Math.Max(0, ticks.Start));
-
-            return Math.Min(y, y0);
+            return base.TooltipY(item);
         }
 
         /// <inheritdoc />
-        public override object DataAt(double x, double y)
+        public override (object, Point) DataAt(double x, double y)
         {
             var category = ComposeCategory(Chart.CategoryScale);
             var value = ComposeValue(Chart.ValueScale);
@@ -143,7 +183,7 @@ namespace Radzen.Blazor
             var index = columnSeries.IndexOf(this);
             var padding = Chart.ColumnOptions.Margin;
             var bandWidth = BandWidth;
-            var width = bandWidth / columnSeries.Count() - padding + padding / columnSeries.Count();
+            var width = Chart.ColumnOptions.Width ?? bandWidth / columnSeries.Count() - padding + padding / columnSeries.Count();
 
             foreach (var data in Items)
             {
@@ -155,11 +195,33 @@ namespace Radzen.Blazor
 
                 if (startX <= x && x <= endX && startY <= y && y <= endY)
                 {
-                    return data;
+                    return (data, new Point() { X = x, Y = y });
                 }
             }
 
-            return null;
+            return (null, null);
+        }
+
+        /// <inheritdoc />
+        public override IEnumerable<ChartDataLabel> GetDataLabels(double offsetX, double offsetY)
+        {
+            var list = new List<ChartDataLabel>();
+
+            int sign;
+
+            foreach (var d in Data)
+            {
+                sign = Value(d) < 0 ? -1 : Value(d) == 0 ? 0 : 1;
+
+                list.Add(new ChartDataLabel
+                {
+                    Position = new Point() { X = TooltipX(d) + offsetX, Y = TooltipY(d) - offsetY - (16 * sign) },
+                    TextAnchor = "middle",
+                    Text = Chart.ValueAxis.Format(Chart.ValueScale, Value(d))
+                });
+            }
+
+            return list;
         }
     }
 }

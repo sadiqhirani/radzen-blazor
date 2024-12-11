@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Web;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -43,13 +44,7 @@ namespace Radzen.Blazor
         /// Gets the steps collection.
         /// </summary>
         /// <value>The steps collection.</value>
-        public IList<RadzenStepsItem> StepsCollection
-        {
-            get
-            {
-                return steps;
-            }
-        }
+        public IList<RadzenStepsItem> StepsCollection { get => steps; }
 
         bool IsFirstVisibleStep()
         {
@@ -167,8 +162,26 @@ namespace Radzen.Blazor
         [Parameter]
         public EventCallback<int> Change { get; set; }
 
-        private string _nextStep = "Next";
+        /// <summary>
+        /// A callback that will be invoked when the user tries to change the step.
+        /// Invoke the <see cref="StepsCanChangeEventArgs.PreventDefault"/> method to prevent this change.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// &lt;RadzenSteps CanChange=@OnCanChange&gt;
+        /// &lt;/RadzenSteps&gt;
+        /// @code {
+        ///  void OnCanChange(RadzenStepsCanChangeEventArgs args)
+        ///  {
+        ///     args.PreventDefault();
+        ///  }
+        /// }
+        /// </code>
+        /// </example>
+        [Parameter]
+        public EventCallback<StepsCanChangeEventArgs> CanChange { get; set; }
 
+        private string _nextStep = "Next";
         /// <summary>
         /// Gets or sets the next button text.
         /// </summary>
@@ -176,7 +189,10 @@ namespace Radzen.Blazor
         [Parameter]
         public string NextText
         {
-            get { return _nextStep; }
+            get
+            {
+                return StepsCollection.ElementAtOrDefault(SelectedIndex)?.NextText ?? _nextStep;
+            }
             set
             {
                 if (value != _nextStep)
@@ -196,7 +212,10 @@ namespace Radzen.Blazor
         [Parameter]
         public string PreviousText
         {
-            get { return _previousText; }
+            get
+            {
+                return StepsCollection.ElementAtOrDefault(SelectedIndex)?.PreviousText ?? _previousText;
+            }
             set
             {
                 if (value != _previousText)
@@ -208,12 +227,75 @@ namespace Radzen.Blazor
             }
         }
 
+        private string _nextTitle = "Go to the next step.";
+        /// <summary>
+        /// Gets or sets the next button title attribute.
+        /// </summary>
+        /// <value>The next button title attribute.</value>
+        [Parameter]
+        public string NextTitle
+        {
+            get
+            {
+                return StepsCollection.ElementAtOrDefault(SelectedIndex)?.NextTitle ?? _nextTitle;
+            }
+            set
+            {
+                if (value != _nextTitle)
+                {
+                    _nextTitle = value;
+                    Refresh();
+                }
+            }
+        }
+
+        private string _previousTitle = "Go to the previous step.";
+        /// <summary>
+        /// Gets or sets the previous button title attribute.
+        /// </summary>
+        /// <value>The previous button title attribute.</value>
+        [Parameter]
+        public string PreviousTitle
+        {
+            get
+            {
+                return StepsCollection.ElementAtOrDefault(SelectedIndex)?.PreviousTitle ?? _previousTitle;
+            }
+            set
+            {
+                if (value != _previousTitle)
+                {
+                    _previousTitle = value;
+                    Refresh();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the next button aria-label attribute.
+        /// </summary>
+        /// <value>The next button aria-label attribute.</value>
+        public string NextAriaLabel => StepsCollection.ElementAtOrDefault(SelectedIndex)?.NextAriaLabel;
+
+        /// <summary>
+        /// Gets the previous button aria-label attribute.
+        /// </summary>
+        /// <value>The previous button aria-label attribute.</value>
+        public string PreviousAriaLabel => StepsCollection.ElementAtOrDefault(SelectedIndex)?.PreviousAriaLabel;
+
         /// <summary>
         /// Gets or sets the steps.
         /// </summary>
         /// <value>The steps.</value>
         [Parameter]
         public RenderFragment Steps { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <value><c>true</c> user can jump to any step if enabled; <c>false</c> user can change steps only with step buttons (previous/next).</value>
+        [Parameter]
+        public bool AllowStepSelect { get; set; } = true;
 
         List<RadzenStepsItem> steps = new List<RadzenStepsItem>();
 
@@ -245,7 +327,10 @@ namespace Radzen.Blazor
             {
                 steps.Remove(item);
 
-                StateHasChanged();
+                if (!disposed)
+                {
+                    try { InvokeAsync(StateHasChanged); } catch { }
+                }
             }
         }
 
@@ -267,14 +352,23 @@ namespace Radzen.Blazor
 
         internal async System.Threading.Tasks.Task SelectStep(RadzenStepsItem step, bool raiseChange = false)
         {
+            var newIndex = steps.IndexOf(step);
+
+            var canChangeArgs = new StepsCanChangeEventArgs { SelectedIndex = SelectedIndex, NewIndex = newIndex };
+
+            await CanChange.InvokeAsync(canChangeArgs);
+
+            if (canChangeArgs.IsDefaultPrevented)
+            {
+                return;
+            }
+
             var valid = true;
 
             if (EditContext != null)
             {
                 valid = EditContext.Validate();
             }
-
-            var newIndex = steps.IndexOf(step);
 
             if (valid || newIndex < SelectedIndex)
             {
@@ -320,11 +414,21 @@ namespace Radzen.Blazor
             await base.SetParametersAsync(parameters);
         }
 
-        /// <inheritdoc />
-        public override void Dispose()
+        bool preventKeyPress = false;
+        async Task OnKeyPress(KeyboardEventArgs args, Task task)
         {
-            base.Dispose();
-            steps.Clear();
+            var key = args.Code != null ? args.Code : args.Key;
+
+            if (key == "Space" || key == "Enter")
+            {
+                preventKeyPress = true;
+
+                await task;
+            }
+            else
+            {
+                preventKeyPress = false;
+            }
         }
     }
 }

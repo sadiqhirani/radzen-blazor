@@ -15,6 +15,9 @@ namespace Radzen.Blazor
     public partial class RadzenWeekView : SchedulerViewBase
     {
         /// <inheritdoc />
+        public override string Icon => "calendar_view_week";
+
+        /// <inheritdoc />
         [Parameter]
         public override string Text { get; set; } = "Week";
 
@@ -24,6 +27,13 @@ namespace Radzen.Blazor
         /// <value>The time format. Set to <c>h tt</c> by default.</value>
         [Parameter]
         public string TimeFormat { get; set; } = "h tt";
+
+        /// <summary>
+        /// Gets or sets the format used to display the header text.
+        /// </summary>
+        /// <value>The header text format. Set to <c>ddd</c> by default.</value>
+        [Parameter]
+        public string HeaderFormat { get; set; } = "ddd";
 
         /// <summary>
         /// Gets or sets the start time.
@@ -39,6 +49,12 @@ namespace Radzen.Blazor
         [Parameter]
         public TimeSpan EndTime { get; set; } = TimeSpan.FromHours(24);
 
+        /// <summary>
+        /// Gets or sets slot size in minutes. Set to <c>30</c> by default.
+        /// </summary>
+        /// <value>The slot size in minutes.</value>
+        [Parameter]
+        public int MinutesPerSlot { get; set; } = 30;
         /// <inheritdoc />
         public override DateTime StartDate
         {
@@ -65,6 +81,7 @@ namespace Radzen.Blazor
                 return $"{StartDate.ToString(Scheduler.Culture.DateTimeFormat.ShortDatePattern)} - {StartDate.EndOfWeek().ToString(Scheduler.Culture.DateTimeFormat.ShortDatePattern)}";
             }
         }
+
 
         /// <inheritdoc />
         public override DateTime Next()

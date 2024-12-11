@@ -20,39 +20,29 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Property", "Id");
                     builder.CloseComponent();
                 });
             });
 
             // Main
-            Assert.Contains(@$"rz-datatable-scrollable-wrapper", component.Markup);
-            Assert.Contains(@$"rz-datatable-scrollable-view", component.Markup);
+            Assert.Contains(@$"rz-data-grid", component.Markup);
+            Assert.Contains(@$"rz-datatable", component.Markup);
+            Assert.Contains(@$"rz-datatable-scrollable", component.Markup);
 
-            // Header
-            Assert.Contains(@$"rz-datatable-scrollable-header", component.Markup);
-            Assert.Contains(@$"rz-datatable-scrollable-header-box", component.Markup);
-            Assert.Contains(@$"rz-datatable-thead", component.Markup);
-            Assert.Contains(@$"rz-datatable-scrollable-colgroup", component.Markup);
+            // Data
+            Assert.Contains(@$"rz-data-grid-data", component.Markup);
 
-            //Body
-            Assert.Contains(@$"rz-datatable-scrollable-body", component.Markup);
-            Assert.Contains(@$"rz-datatable-scrollable-table-wrapper", component.Markup);
-            Assert.Contains(@$"rz-datatable-data", component.Markup);
-            Assert.Contains(@$"rz-datatable-hoverable-rows", component.Markup);
-
-            // Footer
-            Assert.DoesNotContain(@$"rz-datatable-scrollable-footer", component.Markup);
-            Assert.DoesNotContain(@$"rz-datatable-scrollable-footer-box", component.Markup);
-
-            //Columns
-            Assert.DoesNotContain(@$"rz-sortable-column", component.Markup);
+            // Table
+            Assert.Contains(@$"rz-grid-table", component.Markup);
+            Assert.Contains(@$"rz-grid-table-fixed", component.Markup);
+            Assert.Contains(@$"rz-grid-table-striped", component.Markup);
         }
 
         // Columns tests
@@ -63,22 +53,22 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Property", "Id");
                     builder.CloseComponent();
                 });
             });
 
-            var markup = new Regex(@"\s\s+").Replace(component.Markup, "").Trim();
+            var data = component.FindAll(".rz-cell-data");
 
-            Assert.Contains(@$"<span class=""rz-cell-data"">1</span>", markup);
-            Assert.Contains(@$"<span class=""rz-cell-data"">2</span>", markup);
-            Assert.Contains(@$"<span class=""rz-cell-data"">3</span>", markup);
+            Assert.Equal("1", data[0].TextContent.Trim());
+            Assert.Equal("2", data[1].TextContent.Trim());
+            Assert.Equal("3", data[2].TextContent.Trim());
         }
 
         [Fact]
@@ -88,20 +78,67 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Title", "MyId");
                     builder.CloseComponent();
                 });
             });
 
-            var markup = new Regex(@"\s\s+").Replace(component.Markup, "").Trim();
+            var title = component.Find(".rz-column-title");
+            Assert.Equal("MyId", title.TextContent.Trim());
+        }
 
-            Assert.Contains(@$"<span class=""rz-column-title"">MyId</span>", markup);
+        [Fact]
+        public void DataGrid_Renders_TitleAttribute()
+        {
+            using var ctx = new TestContext();
+            ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+            ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
+
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add(p => p.ShowColumnTitleAsTooltip, true);
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Title", "MyId");
+                    builder.CloseComponent();
+                });
+            });
+
+            var title = component.Find(".rz-column-title");
+            Assert.Equal("MyId", title.TextContent.Trim());
+            Assert.Equal("MyId", title.GetAttribute("title"));
+        }
+
+        [Fact]
+        public void DataGrid_DoesNotRender_TitleAttribute()
+        {
+            using var ctx = new TestContext();
+            ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+            ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
+
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add(p => p.ShowColumnTitleAsTooltip, false);
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Title", "MyId");
+                    builder.CloseComponent();
+                });
+            });
+
+            var title = component.Find(".rz-column-title");
+            Assert.Equal("MyId", title.TextContent.Trim());
+            Assert.Null(title.GetAttribute("title"));
         }
 
         [Fact]
@@ -111,12 +148,12 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Property", "Id");
                     builder.AddAttribute(2, "Title", "Id");
                     builder.CloseComponent();
@@ -141,12 +178,12 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Property", "Id");
                     builder.AddAttribute(2, "Title", "Id");
                     builder.AddAttribute(3, "Sortable", false);
@@ -165,12 +202,12 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Property", "Id");
                     builder.AddAttribute(2, "Title", "Id");
                     builder.CloseComponent();
@@ -178,14 +215,14 @@ namespace Radzen.Blazor.Tests
                 parameterBuilder.Add<bool>(p => p.AllowFiltering, true);
             });
 
-            Assert.Contains(@$"rz-cell-filter", component.Markup);
+            Assert.Contains(@$"rz-grid-filter-icon", component.Markup);
 
             component.SetParametersAndRender(parameters =>
             {
                 parameters.Add<bool>(p => p.AllowFiltering, false);
             });
 
-            Assert.DoesNotContain(@$"rz-cell-filter", component.Markup);
+            Assert.DoesNotContain(@$"rz-grid-filter-icon", component.Markup);
         }
 
         [Fact]
@@ -195,12 +232,12 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Property", "Id");
                     builder.AddAttribute(2, "Title", "Id");
                     builder.AddAttribute(3, "Filterable", false);
@@ -219,12 +256,12 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, new[] { new { Id = 1 }, new { Id = 2 }, new { Id = 3 } });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Property", "Id");
                     builder.AddAttribute(2, "Title", "Id");
                     builder.CloseComponent();
@@ -250,12 +287,12 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<int>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<int>>(p => p.Data, new[] { 1, 2, 3 });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<int>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<int>));
 
                     builder.AddAttribute(1, "HeaderTemplate", (RenderFragment)delegate (RenderTreeBuilder b)
                     {
@@ -276,12 +313,12 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<int>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<int>>(p => p.Data, new[] { 1, 2, 3 });
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<int>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<int>));
 
                     builder.AddAttribute(1, "FooterTemplate", (RenderFragment)delegate (RenderTreeBuilder b)
                     {
@@ -292,8 +329,8 @@ namespace Radzen.Blazor.Tests
                 });
             });
 
-            Assert.Contains(@$"rz-datatable-scrollable-footer", component.Markup);
-            Assert.Contains(@$"rz-datatable-scrollable-footer-box", component.Markup);
+            Assert.Contains(@$"rz-datatable-tfoot", component.Markup);
+            Assert.Contains(@$"rz-column-footer", component.Markup);
             Assert.Contains(@$"Footer", component.Markup);
         }
 
@@ -305,12 +342,12 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<dynamic>>(parameterBuilder =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
                 parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
                 parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
                 {
-                    builder.OpenComponent(0, typeof(RadzenGridColumn<dynamic>));
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
                     builder.AddAttribute(1, "Property", "Id");
                     builder.AddAttribute(2, "Title", "Id");
                     builder.CloseComponent();
@@ -335,11 +372,20 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
-            component.SetParametersAndRender(parameters => parameters.Add<bool>(p => p.AllowPaging, true));
-
-            Assert.Contains(@$"rz-paginator-bottom", component.Markup);
+            Assert.Contains(@$"rz-pager", component.Markup);
         }
 
         [Fact]
@@ -349,16 +395,21 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
-
-            component.SetParametersAndRender(parameters =>
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
             {
-                parameters.Add<bool>(p => p.AllowPaging, true);
-                parameters.Add<PagerPosition>(p => p.PagerPosition, PagerPosition.Top);
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+                parameterBuilder.Add<PagerPosition>(p => p.PagerPosition, PagerPosition.Top);
             });
 
-            Assert.Contains(@$"rz-paginator", component.Markup);
-            Assert.DoesNotContain(@$"rz-paginator-bottom", component.Markup);
+            Assert.Contains(@$"rz-pager", component.Markup);
         }
 
         [Fact]
@@ -368,16 +419,59 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+                parameterBuilder.Add<PagerPosition>(p => p.PagerPosition, PagerPosition.TopAndBottom);
+            });
+
+            Assert.Contains(@$"rz-pager", component.Markup);
+        }
+
+        [Fact]
+        public void DataGrid_Renders_PagerDensityDefault()
+        {
+            using var ctx = new TestContext();
+            ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+            ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
+
+            var component = ctx.RenderComponent<RadzenDataGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
 
             component.SetParametersAndRender(parameters =>
             {
                 parameters.Add<bool>(p => p.AllowPaging, true);
-                parameters.Add<PagerPosition>(p => p.PagerPosition, PagerPosition.TopAndBottom);
+                parameters.Add<PagerPosition>(p => p.PagerPosition, PagerPosition.Top);
+                parameters.Add<Density>(p => p.Density, Density.Default);
             });
 
-            Assert.Contains(@$"rz-paginator", component.Markup);
-            Assert.Contains(@$"rz-paginator-bottom", component.Markup);
+            Assert.DoesNotContain(@$"rz-density-compact", component.Markup);
+        }
+
+        [Fact]
+        public void DataGrid_Renders_PagerDensityCompact()
+        {
+            using var ctx = new TestContext();
+            ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+            ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
+
+            var component = ctx.RenderComponent<RadzenDataGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+
+            component.SetParametersAndRender(parameters =>
+            {
+                parameters.Add<bool>(p => p.AllowPaging, true);
+                parameters.Add<PagerPosition>(p => p.PagerPosition, PagerPosition.Top);
+                parameters.Add<Density>(p => p.Density, Density.Compact);
+            });
+
+            Assert.Contains(@$"rz-density-compact", component.Markup);
         }
 
         [Fact]
@@ -387,7 +481,7 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Array.Empty<int>()));
+            var component = ctx.RenderComponent<RadzenDataGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Array.Empty<int>()));
             component.Render();
 
             Assert.Contains("No records to display.", component.Markup);
@@ -401,7 +495,7 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Array.Empty<int>()));
+            var component = ctx.RenderComponent<RadzenDataGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Array.Empty<int>()));
             component.SetParametersAndRender(parameters =>
             {
                 parameters.Add(p => p.EmptyText, emptyText);
@@ -417,7 +511,7 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Array.Empty<int>()));
+            var component = ctx.RenderComponent<RadzenDataGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Array.Empty<int>()));
             component.SetParametersAndRender(parameters =>
             {
                 parameters.Add<RenderFragment>(p => p.EmptyTemplate, builder =>
@@ -438,18 +532,28 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
             LoadDataArgs newArgs = null;
 
             component.SetParametersAndRender(parameters =>
             {
-                parameters.Add<bool>(p => p.AllowPaging, true);
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; newArgs = args; });
             });
 
-            component.Find(".rz-paginator-next").Click();
+            component.Find(".rz-pager-next").Click();
 
             Assert.True(raised);
             Assert.True(newArgs.Skip == 10);
@@ -463,18 +567,28 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
             LoadDataArgs newArgs = null;
 
             component.SetParametersAndRender(parameters =>
             {
-                parameters.Add<bool>(p => p.AllowPaging, true);
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; newArgs = args; });
             });
 
-            component.Find(".rz-paginator-last").Click();
+            component.Find(".rz-pager-last").Click();
 
             Assert.True(raised);
             Assert.True(newArgs.Skip == 90);
@@ -488,19 +602,29 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
             LoadDataArgs newArgs = null;
 
             component.SetParametersAndRender(parameters =>
             {
-                parameters.Add<bool>(p => p.AllowPaging, true);
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; newArgs = args; });
             });
 
-            component.Find(".rz-paginator-next").Click();
-            component.Find(".rz-paginator-prev").Click();
+            component.Find(".rz-pager-next").Click();
+            component.Find(".rz-pager-prev").Click();
 
             Assert.True(raised);
             Assert.True(newArgs.Skip == 0);
@@ -514,19 +638,29 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
             LoadDataArgs newArgs = null;
 
             component.SetParametersAndRender(parameters =>
             {
-                parameters.Add<bool>(p => p.AllowPaging, true);
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; newArgs = args; });
             });
 
-            component.Find(".rz-paginator-next").Click();
-            component.Find(".rz-paginator-first").Click();
+            component.Find(".rz-pager-next").Click();
+            component.Find(".rz-pager-first").Click();
 
             Assert.True(raised);
             Assert.True(newArgs.Skip == 0);
@@ -540,17 +674,27 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
 
             component.SetParametersAndRender(parameters =>
             {
-                parameters.Add<bool>(p => p.AllowPaging, true);
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; });
             });
 
-            component.Find(".rz-paginator-first").Click();
+            component.Find(".rz-pager-first").Click();
 
             Assert.False(raised);
         }
@@ -562,17 +706,27 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
 
             component.SetParametersAndRender(parameters =>
             {
-                parameters.Add<bool>(p => p.AllowPaging, true);
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; });
             });
 
-            component.Find(".rz-paginator-prev").Click();
+            component.Find(".rz-pager-prev").Click();
 
             Assert.False(raised);
         }
@@ -584,23 +738,29 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
 
-            component.SetParametersAndRender(parameters =>
-            {
-                parameters.Add<bool>(p => p.AllowPaging, true);
-            });
-
-            component.Find(".rz-paginator-last").Click();
+            component.Find(".rz-pager-last").Click();
 
             component.SetParametersAndRender(parameters =>
             {
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; });
             });
 
-            component.Find(".rz-paginator-last").Click();
+            component.Find(".rz-pager-last").Click();
 
             Assert.False(raised);
         }
@@ -612,23 +772,29 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
 
-            component.SetParametersAndRender(parameters =>
-            {
-                parameters.Add<bool>(p => p.AllowPaging, true);
-            });
-
-            component.Find(".rz-paginator-last").Click();
+            component.Find(".rz-pager-last").Click();
 
             component.SetParametersAndRender(parameters =>
             {
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; });
             });
 
-            component.Find(".rz-paginator-next").Click();
+            component.Find(".rz-pager-next").Click();
 
             Assert.False(raised);
         }
@@ -640,19 +806,33 @@ namespace Radzen.Blazor.Tests
             ctx.JSInterop.Mode = JSRuntimeMode.Loose;
             ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
 
-            var component = ctx.RenderComponent<RadzenGrid<int>>(parameterBuilder => parameterBuilder.Add<IEnumerable<int>>(p => p.Data, Enumerable.Range(0, 100)));
+            var component = ctx.RenderComponent<RadzenDataGrid<dynamic>>(parameterBuilder =>
+            {
+                parameterBuilder.Add<IEnumerable<dynamic>>(p => p.Data, Enumerable.Range(0, 100).Select(i => new { Id = i }));
+                parameterBuilder.Add<RenderFragment>(p => p.Columns, builder =>
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridColumn<dynamic>));
+                    builder.AddAttribute(1, "Property", "Id");
+                    builder.AddAttribute(2, "Title", "Id");
+                    builder.CloseComponent();
+                });
+                parameterBuilder.Add<bool>(p => p.AllowPaging, true);
+            });
 
             var raised = false;
             LoadDataArgs newArgs = null;
 
             component.SetParametersAndRender(parameters =>
             {
-                parameters.Add<bool>(p => p.AllowPaging, true);
-                parameters.Add<int>(p => p.PageSize, 20);
                 parameters.Add<LoadDataArgs>(p => p.LoadData, args => { raised = true; newArgs = args; });
             });
 
-            component.Find(".rz-paginator-next").Click();
+            component.SetParametersAndRender(parameters =>
+            {
+                parameters.Add<int>(p => p.PageSize, 20);
+            });
+
+            component.Find(".rz-pager-next").Click();
 
             Assert.True(raised);
             Assert.True(newArgs.Skip == 20);

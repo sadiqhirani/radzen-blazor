@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Radzen.Blazor.Rendering;
 using System;
 using System.Collections.Generic;
@@ -54,6 +55,13 @@ namespace Radzen.Blazor
         public string Icon { get; set; }
 
         /// <summary>
+        /// Gets or sets the icon color.
+        /// </summary>
+        /// <value>The icon color.</value>
+        [Parameter]
+        public string IconColor { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether this <see cref="RadzenTabsItem"/> is selected.
         /// </summary>
         /// <value><c>true</c> if selected; otherwise, <c>false</c>.</value>
@@ -73,6 +81,7 @@ namespace Radzen.Blazor
         /// <value>The class list.</value>
         ClassList ClassList => ClassList.Create()
                                         .Add("rz-tabview-selected", IsSelected)
+                                        .Add("rz-state-focused", Tabs.IsFocused(this))
                                         .AddDisabled(Disabled)
                                         .Add(Attributes);
 
@@ -123,18 +132,23 @@ namespace Radzen.Blazor
             await Tabs.AddTab(this);
         }
 
-        async Task OnClick()
+        internal async Task OnClick()
         {
             if (!Disabled)
             {
-                if (Tabs.RenderMode == TabRenderMode.Server)
-                {
-                    await Tabs.SelectTab(this, true);
-                }
-                else
-                {
-                    await Tabs.SelectTabOnClient(this);
-                }
+                await SelectTab(this);
+            }
+        }
+
+        async Task SelectTab(RadzenTabsItem item)
+        {
+            if (Tabs.RenderMode == TabRenderMode.Server)
+            {
+                await Tabs.SelectTab(this, true);
+            }
+            else
+            {
+                await Tabs.SelectTabOnClient(this);
             }
         }
 
@@ -156,7 +170,11 @@ namespace Radzen.Blazor
 
             if (visibleChanged && IsSelected)
             {
-                Tabs?.SelectTab(this);
+                var firstTab = Tabs?.FirstVisibleTab();
+                if (firstTab != null)
+                {
+                    await SelectTab(firstTab);
+                }
             }
         }
 
@@ -164,6 +182,11 @@ namespace Radzen.Blazor
         public void Dispose()
         {
             Tabs?.RemoveItem(this);
+        }
+
+        string getStyle()
+        {
+            return $"{(!Visible ? $"display:none;" : null)}{(!string.IsNullOrEmpty(Style) ? Style : null)}";
         }
     }
 }

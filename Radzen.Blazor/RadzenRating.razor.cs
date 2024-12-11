@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using System.Threading.Tasks;
 
 namespace Radzen.Blazor
 {
@@ -26,6 +28,20 @@ namespace Radzen.Blazor
         public int Stars { get; set; } = 5;
 
         /// <summary>
+        /// Gets or sets the clear aria label text.
+        /// </summary>
+        /// <value>The clear aria label text.</value>
+        [Parameter]
+        public string ClearAriaLabel { get; set; } = "Clear";
+
+        /// <summary>
+        /// Gets or sets the rate aria label text.
+        /// </summary>
+        /// <value>The rate aria label text.</value>
+        [Parameter]
+        public string RateAriaLabel { get; set; } = "Rate";
+
+        /// <summary>
         /// Gets or sets a value indicating whether is read only.
         /// </summary>
         /// <value><c>true</c> if is read only; otherwise, <c>false</c>.</value>
@@ -41,6 +57,23 @@ namespace Radzen.Blazor
                 await ValueChanged.InvokeAsync(value);
                 if (FieldIdentifier.FieldName != null) { EditContext?.NotifyFieldChanged(FieldIdentifier); }
                 await Change.InvokeAsync(value);
+            }
+        }
+
+        bool preventKeyPress = true;
+        async Task OnKeyPress(KeyboardEventArgs args, Task task)
+        {
+            var key = args.Code != null ? args.Code : args.Key;
+
+            if (key == "Space" || key == "Enter")
+            {
+                preventKeyPress = true;
+
+                await task;
+            }
+            else
+            {
+                preventKeyPress = false;
             }
         }
     }

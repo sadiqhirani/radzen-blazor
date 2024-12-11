@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using System;
 using System.Collections;
@@ -90,7 +91,7 @@ namespace Radzen.Blazor
 
                 if (Visible && !Disabled)
                 {
-                    await JSRuntime.InvokeVoidAsync("Radzen.createSlider", UniqueID, Reference, Element, Range, Range ? minHandle : handle, maxHandle, Min, Max, Value, Step);
+                    await JSRuntime.InvokeVoidAsync("Radzen.createSlider", UniqueID, Reference, Element, Range, Range ? minHandle : handle, maxHandle, Min, Max, Value, Step, Orientation == Orientation.Vertical);
 
                     StateHasChanged();
                 }
@@ -193,8 +194,14 @@ namespace Radzen.Blazor
         /// <inheritdoc />
         protected override string GetComponentCssClass()
         {
-            return $"rz-slider {(Disabled ? "rz-state-disabled " : "")}rz-slider-horizontal";
+            return $"rz-slider {(Disabled ? "rz-state-disabled " : "")}{(Orientation == Orientation.Vertical ? "rz-slider-vertical" : "rz-slider-horizontal")}";
         }
+
+        /// <summary>
+        /// Specifies the orientation. Set to <c>Orientation.Horizontal</c> by default.
+        /// </summary>
+        [Parameter]
+        public Orientation Orientation { get; set; } = Orientation.Horizontal;
 
         /// <summary>
         /// Gets or sets the value.
@@ -309,5 +316,38 @@ namespace Radzen.Blazor
         /// <value>The maximum value.</value>
         [Parameter]
         public decimal Max { get; set; } = 100;
+
+        bool preventKeyPress = false;
+        async Task OnKeyPress(KeyboardEventArgs args, bool isMin)
+        {
+            var key = args.Code != null ? args.Code : args.Key;
+
+            if (Orientation == Orientation.Horizontal ? key == "ArrowLeft" || key == "ArrowRight" : key == "ArrowUp" || key == "ArrowDown")
+            {
+                preventKeyPress = true;
+
+                var step = string.IsNullOrEmpty(Step) || Step == "any" ? 1 : decimal.Parse(Step.Replace(",", "."), System.Globalization.CultureInfo.InvariantCulture);
+
+                if (Range)
+                {
+                    var oldMinValue = ((IEnumerable)Value).OfType<object>().FirstOrDefault();
+                    var oldMaxValue = ((IEnumerable)Value).OfType<object>().LastOrDefault();
+                    var oldMinValueAsDecimal = (decimal)ConvertType.ChangeType(oldMinValue, typeof(decimal));
+                    var oldMaxValueAsDecimal = (decimal)ConvertType.ChangeType(oldMaxValue, typeof(decimal));
+
+                    await OnValueChange((isMin ? oldMinValueAsDecimal : oldMaxValueAsDecimal) + (key == "ArrowLeft" || key == "ArrowDown" ? -step : step), isMin);
+                }
+                else
+                {
+                    var valueAsDecimal = Value == null ? 0 : (decimal)ConvertType.ChangeType(Value, typeof(decimal));
+
+                    await OnValueChange(valueAsDecimal + (key == "ArrowLeft" || key == "ArrowDown" ? -step : step), isMin);
+                }
+            }
+            else
+            {
+                preventKeyPress = false;
+            }
+        }
     }
 }

@@ -23,14 +23,14 @@ namespace Radzen.Blazor.Tests
 
             component.Render();
 
-            Assert.Contains(@$"rz-paginator", component.Markup);
+            Assert.Contains(@$"rz-pager", component.Markup);
 
             component.SetParametersAndRender(parameters =>
             {
                 parameters.Add<int>(p => p.PageSize, 101);
                 parameters.Add<int>(p => p.Count, 100);
             });
-            Assert.DoesNotContain(@$"rz-paginator", component.Markup);
+            Assert.DoesNotContain(@$"rz-pager", component.Markup);
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace Radzen.Blazor.Tests
 
             component.Render();
 
-            Assert.Contains(@$"rz-paginator", component.Markup);
+            Assert.Contains(@$"rz-pager", component.Markup);
             Assert.Contains(@$"rz-dropdown-trigger", component.Markup);
         }
 
@@ -67,14 +67,93 @@ namespace Radzen.Blazor.Tests
             await component.Instance.GoToPage(2);
             component.Render();
 
-            Assert.Contains(@$"rz-paginator-summary", component.Markup); 
+            Assert.Contains(@$"rz-pager-summary", component.Markup); 
             Assert.Contains(@$"Page 3 of 10 (100 items)", component.Markup); 
             
             component.SetParametersAndRender(parameters => {
                 parameters.Add<bool>(p => p.ShowPagingSummary, false);
             });
-            Assert.DoesNotContain(@$"rz-paginator-summary", component.Markup);
+            Assert.DoesNotContain(@$"rz-pager-summary", component.Markup);
         }
 
+        [Fact]
+        public void RadzenPager_Renders_PagerDensityDefault()
+        {
+            using var ctx = new TestContext();
+            ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+            ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
+
+            var component = ctx.RenderComponent<RadzenPager>(parameters =>
+            {
+                parameters.Add<int>(p => p.PageSize, 20);
+                parameters.Add<int>(p => p.Count, 100);
+                parameters.Add<Density>(p => p.Density, Density.Default);
+            });
+
+            Assert.DoesNotContain(@$"rz-density-compact", component.Markup);
+        }
+
+        [Fact]
+        public void RadzenPager_Renders_PagerDensityCompact()
+        {
+            using var ctx = new TestContext();
+            ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+            ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
+
+            var component = ctx.RenderComponent<RadzenPager>(parameters =>
+            {
+                parameters.Add<int>(p => p.PageSize, 20);
+                parameters.Add<int>(p => p.Count, 100);
+                parameters.Add<Density>(p => p.Density, Density.Compact);
+            });
+
+            Assert.Contains(@$"rz-density-compact", component.Markup);
+        }
+
+        [Fact]
+        public async void RadzenPager_First_And_Prev_Buttons_Are_Disabled_When_On_The_First_Page()
+        {
+            using var ctx = new TestContext();
+            ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+            ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
+
+            var component = ctx.RenderComponent<RadzenPager>(parameters => {
+                parameters.Add<int>(p => p.PageSize, 10);
+                parameters.Add<int>(p => p.Count, 100);
+                parameters.Add<bool>(p => p.ShowPagingSummary, true);
+            });
+
+            await component.Instance.GoToPage(0);
+            component.Render();
+
+            var firstPageButton = component.Find("a.rz-pager-first");
+            Assert.True(firstPageButton.HasAttribute("disabled"));
+
+            var prevPageButton = component.Find("a.rz-pager-prev");
+            Assert.True(prevPageButton.HasAttribute("disabled"));
+        }
+
+        [Fact]
+        public async void RadzenPager_Last_And_Next_Buttons_Are_Disabled_When_On_The_Last_Page()
+        {
+            using var ctx = new TestContext();
+            ctx.JSInterop.Mode = JSRuntimeMode.Loose;
+            ctx.JSInterop.SetupModule("_content/Radzen.Blazor/Radzen.Blazor.js");
+
+            var component = ctx.RenderComponent<RadzenPager>(parameters => {
+                parameters.Add<int>(p => p.PageSize, 10);
+                parameters.Add<int>(p => p.Count, 100);
+                parameters.Add<bool>(p => p.ShowPagingSummary, true);
+            });
+
+            await component.Instance.GoToPage(9);
+            component.Render();
+
+            var lastPageButton = component.Find("a.rz-pager-last");
+            Assert.True(lastPageButton.HasAttribute("disabled"));
+
+            var nextPageButton = component.Find("a.rz-pager-next");
+            Assert.True(nextPageButton.HasAttribute("disabled"));
+        }
     }
 }

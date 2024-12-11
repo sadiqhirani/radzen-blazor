@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace Radzen.Blazor
 {
@@ -10,7 +11,7 @@ namespace Radzen.Blazor
     /// &lt;RadzenMask Mask="(***) ***-****" Pattern="[^0-9]" Placeholder="(000) 000-0000" @bind-Value=@phone Change=@(args => Console.WriteLine($"Value: {args}")) /&gt;
     /// </code>
     /// </example>
-    public partial class RadzenMask : FormComponent<string>
+    public partial class RadzenMask : FormComponentWithAutoComplete<string>
     {
         /// <summary>
         /// Gets or sets a value indicating whether is read only.
@@ -18,13 +19,6 @@ namespace Radzen.Blazor
         /// <value><c>true</c> if is read only; otherwise, <c>false</c>.</value>
         [Parameter]
         public bool ReadOnly { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether input automatic complete is enabled.
-        /// </summary>
-        /// <value><c>true</c> if input automatic complete is enabled; otherwise, <c>false</c>.</value>
-        [Parameter]
-        public bool AutoComplete { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the maximum length.
@@ -71,6 +65,17 @@ namespace Radzen.Blazor
         protected override string GetComponentCssClass()
         {
             return GetClassList("rz-textbox").ToString();
+        }
+
+        /// <inheritdoc />
+        protected override void OnAfterRender(bool firstRender)
+        {
+            base.OnAfterRender(firstRender);
+
+            if (firstRender)
+            {
+                JSRuntime.InvokeVoidAsync("eval", $"Radzen.mask('{GetId()}', '{Mask}', '{Pattern}', '{CharacterPattern}')");
+            }
         }
     }
 }

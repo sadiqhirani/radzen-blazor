@@ -199,5 +199,30 @@ namespace Radzen
         /// </summary>
         /// <value>The value.</value>
         public object Value { get; set; }
+        /// <summary>
+        /// Gets or sets the icon.
+        /// </summary>
+        /// <value>The icon.</value>
+        public string Icon { get; set; }
+        /// <summary>
+        /// Gets or sets the icon color.
+        /// </summary>
+        /// <value>The icon color.</value>
+        public string IconColor { get; set; }
+        /// <summary>
+        /// Gets or sets the image.
+        /// </summary>
+        /// <value>The image.</value>
+        public string Image { get; set; }
+        /// <summary>
+        /// Gets or sets the image style.
+        /// </summary>
+        /// <value>The image style.</value>
+        public string ImageStyle { get; set; }
+        /// <summary>
+        /// Gets a value indicating whether this instance is disabled.
+        /// </summary>
+        /// <value><c>true</c> if this instance is disabled; otherwise, <c>false</c>.</value>
+        public bool Disabled { get; set; }
     }
 }

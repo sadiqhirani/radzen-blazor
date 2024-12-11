@@ -17,16 +17,25 @@
     <div @ref="@Element" style="@Style" @attributes="Attributes" class="@GetCssClass()" id="@GetId()">
         @foreach (var item in allItems.Where(i => i.Visible))
         {
-            <div class="rz-radio-btn" @onclick="@(args => SelectItem(item))" @attributes="item.Attributes" style="@item.Style">
-                <div class="rz-radiobutton" @onkeypress="@(async args => { if (args.Code == "Space") { await SelectItem(item); } })" tabindex="@TabIndex">
+            <div @ref="@item.Element" id="@item.GetItemId()" @onclick="@(args => SelectItem(item))" @attributes="item.Attributes" class="@item.GetItemCssClass()" style="@item.Style">
+                <div class="rz-radiobutton" @onkeypress="@(args => OnKeyPress(args, SelectItem(item)))" @onkeypress:preventDefault=preventKeyPress @onkeypress:stopPropagation tabindex="@(Disabled || item.Disabled ? "-1" : $"{TabIndex}")">
                     <div class="rz-helper-hidden-accessible">
-                        <input type="radio" disabled="@Disabled" name="@Name" value="@item.Value" tabindex="-1">
+                        <input type="radio" disabled="@Disabled" name="@Name" value="@item.Value" tabindex="-1" aria-label="@(item.Text + " " + item.Value)" @attributes="item.InputAttributes">
                     </div>
                     <div class=@ItemClassList(item)>
                         <span class=@IconClassList(item)></span>
                     </div>
                 </div>
-                <label class="rz-radiobutton-label">@item.Text</label>
+                @if (item.Template != null)
+                {
+                    <div class="rz-radiobutton-template" @onkeydown:stopPropagation>
+                        @item.Template(item)
+                    </div>
+                } 
+                else 
+                {
+                    <span class="rz-radiobutton-label">@((MarkupString)item.Text)</span>
+                }
             </div>
         }
     </div>

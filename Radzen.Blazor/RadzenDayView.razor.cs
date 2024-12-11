@@ -16,6 +16,9 @@ namespace Radzen.Blazor
     public partial class RadzenDayView : SchedulerViewBase
     {
         /// <inheritdoc />
+        public override string Icon => "calendar_view_day";
+
+        /// <inheritdoc />
         [Parameter]
         public override string Text { get; set; } = "Day";
 
@@ -39,6 +42,14 @@ namespace Radzen.Blazor
         /// <value>The end time.</value>
         [Parameter]
         public TimeSpan EndTime { get; set; } = TimeSpan.FromHours(24);
+
+
+        /// <summary>
+        /// Gets or sets slot size in minutes. Set to <c>30</c> by default.
+        /// </summary>
+        /// <value>The slot size in minutes.</value>
+        [Parameter]
+        public int MinutesPerSlot { get; set; } = 30;
 
         /// <inheritdoc />
         public override string Title

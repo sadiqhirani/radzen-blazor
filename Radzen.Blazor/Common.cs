@@ -1,18 +1,478 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Radzen.Blazor;
+using Radzen.Blazor.Rendering;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Dynamic.Core;
+using System.Linq.Dynamic.Core.Parser;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Radzen
 {
+    /// <summary>
+    /// Colors.
+    /// </summary>
+    public static class Colors
+    {
+        /// <summary>
+        /// Primary.
+        /// </summary>
+        public const string Primary = "var(--rz-primary)";
+
+        /// <summary>
+        /// Primary lighter.
+        /// </summary>
+        public const string PrimaryLighter = "var(--rz-primary-lighter)";
+
+        /// <summary>
+        /// Primary light.
+        /// </summary>
+        public const string PrimaryLight = "var(--rz-primary-light)";
+
+        /// <summary>
+        /// Primary dark.
+        /// </summary>
+        public const string PrimaryDark = "var(--rz-primary-dark)";
+
+        /// <summary>
+        /// Primary darker.
+        /// </summary>
+        public const string PrimaryDarker = "var(--rz-primary-darker)";
+
+        /// <summary>
+        /// Secondary.
+        /// </summary>
+        public const string Secondary = "var(--rz-secondary)";
+
+        /// <summary>
+        /// Secondary lighter.
+        /// </summary>
+        public const string SecondaryLighter = "var(--rz-secondary-lighter)";
+
+        /// <summary>
+        /// Secondary light.
+        /// </summary>
+        public const string SecondaryLight = "var(--rz-secondary-light)";
+
+        /// <summary>
+        /// Secondary dark.
+        /// </summary>
+        public const string SecondaryDark = "var(--rz-secondary-dark)";
+
+        /// <summary>
+        /// Secondary darker.
+        /// </summary>
+        public const string SecondaryDarker = "var(--rz-secondary-darker)";
+
+        /// <summary>
+        /// Info.
+        /// </summary>
+        public const string Info = "var(--rz-info)";
+
+        /// <summary>
+        /// Info lighter.
+        /// </summary>
+        public const string InfoLighter = "var(--rz-info-lighter)";
+
+        /// <summary>
+        /// Info light.
+        /// </summary>
+        public const string InfoLight = "var(--rz-info-light)";
+
+        /// <summary>
+        /// Info dark.
+        /// </summary>
+        public const string InfoDark = "var(--rz-info-dark)";
+
+        /// <summary>
+        /// Info darker.
+        /// </summary>
+        public const string InfoDarker = "var(--rz-info-darker)";
+
+        /// <summary>
+        /// Success.
+        /// </summary>
+        public const string Success = "var(--rz-success)";
+
+        /// <summary>
+        /// Success lighter.
+        /// </summary>
+        public const string SuccessLighter = "var(--rz-success-lighter)";
+
+        /// <summary>
+        /// Success light.
+        /// </summary>
+        public const string SuccessLight = "var(--rz-success-light)";
+
+        /// <summary>
+        /// Success dark.
+        /// </summary>
+        public const string SuccessDark = "var(--rz-success-dark)";
+
+        /// <summary>
+        /// Success darker.
+        /// </summary>
+        public const string SuccessDarker = "var(--rz-success-darker)";
+
+        /// <summary>
+        /// Warning.
+        /// </summary>
+        public const string Warning = "var(--rz-warning)";
+
+        /// <summary>
+        /// Warning lighter.
+        /// </summary>
+        public const string WarningLighter = "var(--rz-warning-lighter)";
+
+        /// <summary>
+        /// Warning light.
+        /// </summary>
+        public const string WarningLight = "var(--rz-warning-light)";
+
+        /// <summary>
+        /// Warning dark.
+        /// </summary>
+        public const string WarningDark = "var(--rz-warning-dark)";
+
+        /// <summary>
+        /// Warning darker.
+        /// </summary>
+        public const string WarningDarker = "var(--rz-warning-darker)";
+
+        /// <summary>
+        /// Danger.
+        /// </summary>
+        public const string Danger = "var(--rz-danger)";
+
+        /// <summary>
+        /// Danger lighter.
+        /// </summary>
+        public const string DangerLighter = "var(--rz-danger-lighter)";
+
+        /// <summary>
+        /// Danger light.
+        /// </summary>
+        public const string DangerLight = "var(--rz-danger-light)";
+
+        /// <summary>
+        /// Danger dark.
+        /// </summary>
+        public const string DangerDark = "var(--rz-danger-dark)";
+
+        /// <summary>
+        /// Danger darker.
+        /// </summary>
+        public const string DangerDarker = "var(--rz-danger-darker)";
+
+        /// <summary>
+        /// White.
+        /// </summary>
+        public const string White = "var(--rz-white)";
+
+        /// <summary>
+        /// Black.
+        /// </summary>
+        public const string Black = "var(--rz-black)";
+
+        /// <summary>
+        /// Base 50.
+        /// </summary>
+        public const string Base50 = "var(--rz-base-50)";
+
+        /// <summary>
+        /// Base 100.
+        /// </summary>
+        public const string Base100 = "var(--rz-base-100)";
+
+        /// <summary>
+        /// Base 200.
+        /// </summary>
+        public const string Base200 = "var(--rz-base-200)";
+
+        /// <summary>
+        /// Base 300.
+        /// </summary>
+        public const string Base300 = "var(--rz-base-300)";
+
+        /// <summary>
+        /// Base 400.
+        /// </summary>
+        public const string Base400 = "var(--rz-base-400)";
+
+        /// <summary>
+        /// Base 500.
+        /// </summary>
+        public const string Base500 = "var(--rz-base-500)";
+
+        /// <summary>
+        /// Base 600.
+        /// </summary>
+        public const string Base600 = "var(--rz-base-600)";
+
+        /// <summary>
+        /// Base 700.
+        /// </summary>
+        public const string Base700 = "var(--rz-base-700)";
+
+        /// <summary>
+        /// Base 800.
+        /// </summary>
+        public const string Base800 = "var(--rz-base-800)";
+
+        /// <summary>
+        /// Base 900.
+        /// </summary>
+        public const string Base900 = "var(--rz-base-900)";
+
+        /// <summary>
+        /// Series1.
+        /// </summary>
+        public const string Series1 = "var(--rz-series-1)";
+
+        /// <summary>
+        /// Series2.
+        /// </summary>
+        public const string Series2 = "var(--rz-series-2)";
+
+        /// <summary>
+        /// Series3.
+        /// </summary>
+        public const string Series3 = "var(--rz-series-3)";
+
+        /// <summary>
+        /// Series4.
+        /// </summary>
+        public const string Series4 = "var(--rz-series-4)";
+
+        /// <summary>
+        /// Series5.
+        /// </summary>
+        public const string Series5 = "var(--rz-series-5)";
+
+        /// <summary>
+        /// Series6.
+        /// </summary>
+        public const string Series6 = "var(--rz-series-6)";
+
+        /// <summary>
+        /// Series7.
+        /// </summary>
+        public const string Series7 = "var(--rz-series-7)";
+
+        /// <summary>
+        /// Series8.
+        /// </summary>
+        public const string Series8 = "var(--rz-series-8)";
+    }
+
+    /// <summary>
+    /// Class with IServiceCollection extensions methods.
+    /// </summary>
+    public static class ServiceCollectionExtensions
+    {
+        /// <summary>
+        /// Add Radzen Blazor components services
+        /// </summary>
+        /// <param name="services">Service collection</param>
+        public static IServiceCollection AddRadzenComponents(this IServiceCollection services)
+        {
+            services.AddScoped<DialogService>();
+            services.AddScoped<NotificationService>();
+            services.AddScoped<TooltipService>();
+            services.AddScoped<ContextMenuService>();
+            services.AddScoped<ThemeService>();
+
+            return services;
+        }
+    }
+
+    /// <summary>
+    /// SecurityCodeType enum
+    /// </summary>
+    public enum SecurityCodeType
+    {
+        /// <summary>
+        /// January.
+        /// </summary>
+        String = 0,
+        /// <summary>
+        /// February
+        /// </summary>
+        Numeric = 1,
+        /// <summary>
+        /// March
+        /// </summary>
+        Password = 2
+    }
+
+    /// <summary>
+    /// Month enum
+    /// </summary>
+    public enum Month
+    {
+        /// <summary>
+        /// January.
+        /// </summary>
+        January = 0,
+        /// <summary>
+        /// February
+        /// </summary>
+        February = 1,
+        /// <summary>
+        /// March
+        /// </summary>
+        March = 2,
+        /// <summary>
+        /// April
+        /// </summary>
+        April = 3,
+        /// <summary>
+        /// May
+        /// </summary>
+        May = 4,
+        /// <summary>
+        /// June
+        /// </summary>
+        June = 5,
+        /// <summary>
+        /// July
+        /// </summary>
+        July = 6,
+        /// <summary>
+        /// August
+        /// </summary>
+        August = 7,
+        /// <summary>
+        /// September
+        /// </summary>
+        September = 8,
+        /// <summary>
+        /// October
+        /// </summary>
+        October = 9,
+        /// <summary>
+        /// November
+        /// </summary>
+        November = 10,
+        /// <summary>
+        /// December
+        /// </summary>
+        December = 11,
+    }
+
+    /// <summary>
+    /// Html editor mode (Rendered or Raw). Also used for toolbar buttons to enable/disable according to mode.
+    /// </summary>
+    [Flags]
+    public enum HtmlEditorMode
+    {
+        /// <summary>
+        /// The editor is in Design mode.
+        /// </summary>
+        Design = 1,
+        /// <summary>
+        /// The editor is in Source mode.
+        /// </summary>
+        Source = 2,
+    }
+
+    /// <summary>
+    /// DataGrid settings class used to Save/Load settings.
+    /// </summary>
+    public class DataGridSettings
+    {
+        /// <summary>
+        /// Columns.
+        /// </summary>
+        public IEnumerable<DataGridColumnSettings> Columns { get; set; }
+        /// <summary>
+        /// Groups.
+        /// </summary>
+        public IEnumerable<GroupDescriptor> Groups { get; set; }
+        /// <summary>
+        /// CurrentPage.
+        /// </summary>
+        public int? CurrentPage { get; set; }
+        /// <summary>
+        /// PageSize.
+        /// </summary>
+        public int? PageSize { get; set; }
+    }
+
+    /// <summary>
+    /// DataGrid column settings class used to Save/Load settings.
+    /// </summary>
+    public class DataGridColumnSettings
+    {
+        /// <summary>
+        /// Property.
+        /// </summary>
+        public string UniqueID { get; set; }
+
+        /// <summary>
+        /// Property.
+        /// </summary>
+        public string Property { get; set; }
+        /// <summary>
+        /// Visible.
+        /// </summary>
+        public bool Visible { get; set; }
+        /// <summary>
+        /// Width.
+        /// </summary>
+        public string Width { get; set; }
+        /// <summary>
+        /// OrderIndex.
+        /// </summary>
+        public int? OrderIndex { get; set; }
+        /// <summary>
+        /// SortOrder.
+        /// </summary>
+        public SortOrder? SortOrder { get; set; }
+        /// <summary>
+        /// SortIndex.
+        /// </summary>
+        public int? SortIndex { get; set; }
+        /// <summary>
+        /// FilterValue.
+        /// </summary>
+        public object FilterValue { get; set; }
+        /// <summary>
+        /// FilterOperator.
+        /// </summary>
+        public FilterOperator FilterOperator { get; set; }
+        /// <summary>
+        /// SecondFilterValue.
+        /// </summary>
+        public object SecondFilterValue { get; set; }
+        /// <summary>
+        /// SecondFilterOperator.
+        /// </summary>
+        public FilterOperator SecondFilterOperator { get; set; }
+
+        /// <summary>
+        /// LogicalFilterOperator.
+        /// </summary>
+        public LogicalFilterOperator LogicalFilterOperator { get; set; }
+
+        /// <summary>
+        /// CustomFilterExpression.
+        /// </summary>
+        public string CustomFilterExpression { get; set; }
+    }
+#if NET7_0_OR_GREATER
+#else
     /// <summary>
     /// Enables "onmouseenter" and "onmouseleave" event support in Blazor. Not for public use.
     /// </summary>
@@ -21,9 +481,9 @@ namespace Radzen
     public static class EventHandlers
     {
     }
-
+#endif
     /// <summary>
-    /// Represents the common <see cref="RadzenSelectBar{TValue}" /> API used by 
+    /// Represents the common <see cref="RadzenSelectBar{TValue}" /> API used by
     /// its items. Injected as a cascading property in <see cref="RadzenSelectBarItem" />.
     /// </summary>
     public interface IRadzenSelectBar
@@ -39,6 +499,148 @@ namespace Radzen
         /// </summary>
         /// <param name="item">The item.</param>
         void RemoveItem(RadzenSelectBarItem item);
+
+        /// <summary>
+        /// Refreshes this instance.
+        /// </summary>
+        void Refresh();
+    }
+
+    /// <summary>
+    /// Supplies information about RadzenDropZoneContainer CanDrop function and RadzenDropZone Drop event.
+    /// </summary>
+    public class RadzenDropZoneItemEventArgs<TItem>
+    {
+        /// <summary>
+        /// Gets the dragged item zone.
+        /// </summary>
+        public RadzenDropZone<TItem> FromZone { get; internal set; }
+
+        /// <summary>
+        /// Gets the drop zone.
+        /// </summary>
+        public RadzenDropZone<TItem> ToZone { get; internal set; }
+
+        /// <summary>
+        /// Gets the dragged item.
+        /// </summary>
+        public TItem Item { get; internal set; }
+
+        /// <summary>
+        /// Gets the dropped item.
+        /// </summary>
+        public TItem ToItem { get; internal set; }
+
+        /// <summary>
+        /// The data that underlies a drag-and-drop operation, known as the drag data store.
+        /// See <see cref="DataTransfer"/>.
+        /// </summary>
+        public DataTransfer DataTransfer { get; set; } = default!;
+    }
+
+    /// <summary>
+    /// Supplies information about RadzenDropZoneContainer ItemRender event.
+    /// </summary>
+    public class RadzenDropZoneItemRenderEventArgs<TItem>
+    {
+        /// <summary>
+        /// Gets the drop zone.
+        /// </summary>
+        public RadzenDropZone<TItem> Zone { get; internal set; }
+
+        /// <summary>
+        /// Gets the dragged item.
+        /// </summary>
+        public TItem Item { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this item is visible.
+        /// </summary>
+        /// <value><c>true</c> if visible; otherwise, <c>false</c>.</value>
+        public bool Visible { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the row HTML attributes.
+        /// </summary>
+        public IDictionary<string, object> Attributes { get; private set; } = new Dictionary<string, object>();
+    }
+
+    /// <summary>
+    /// Supplies information about RadzenDropDown ItemRender event.
+    /// </summary>
+    public class DropDownBaseItemRenderEventArgs<TValue>
+    {
+        /// <summary>
+        /// Gets the data item.
+        /// </summary>
+        public object Item { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this item is visible.
+        /// </summary>
+        /// <value><c>true</c> if visible; otherwise, <c>false</c>.</value>
+        public bool Visible { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this item is visible.
+        /// </summary>
+        /// <value><c>true</c> if visible; otherwise, <c>false</c>.</value>
+        public bool Disabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the row HTML attributes.
+        /// </summary>
+        public IDictionary<string, object> Attributes { get; private set; } = new Dictionary<string, object>();
+    }
+
+    /// <summary>
+    /// Supplies information about RadzenDropDown ItemRender event.
+    /// </summary>
+    public class DropDownItemRenderEventArgs<TValue> : DropDownBaseItemRenderEventArgs<TValue>
+    {
+        /// <summary>
+        /// Gets the DropDown.
+        /// </summary>
+        public RadzenDropDown<TValue> DropDown { get; internal set; }
+    }
+
+    /// <summary>
+    /// Supplies information about RadzenDropDown ItemRender event.
+    /// </summary>
+    public class ListBoxItemRenderEventArgs<TValue> : DropDownBaseItemRenderEventArgs<TValue>
+    {
+        /// <summary>
+        /// Gets the DropDown.
+        /// </summary>
+        public RadzenListBox<TValue> ListBox { get; internal set; }
+    }
+
+    /// <summary>
+    /// Supplies information about RadzenPickList ItemRender event.
+    /// </summary>
+    public class PickListItemRenderEventArgs<TItem>
+    {
+        /// <summary>
+        /// Gets the data item.
+        /// </summary>
+        public TItem Item { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this item is visible.
+        /// </summary>
+        /// <value><c>true</c> if visible; otherwise, <c>false</c>.</value>
+        public bool Visible { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this item is visible.
+        /// </summary>
+        /// <value><c>true</c> if visible; otherwise, <c>false</c>.</value>
+        public bool Disabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the row HTML attributes.
+        /// </summary>
+        public IDictionary<string, object> Attributes { get; private set; } = new Dictionary<string, object>();
     }
 
     /// <summary>
@@ -72,7 +674,7 @@ namespace Radzen
     /// <summary>
     /// A class that represents a <see cref="RadzenGoogleMap" /> position.
     /// </summary>
-    public class GoogleMapPosition
+    public class GoogleMapPosition : IEquatable<GoogleMapPosition>
     {
         /// <summary>
         /// Gets or sets the latitude.
@@ -84,6 +686,29 @@ namespace Radzen
         /// </summary>
         /// <value>The longitude.</value>
         public double Lng { get; set; }
+
+        /// <inheritdoc />
+        public bool Equals(GoogleMapPosition other)
+        {
+            if (other != null)
+            {
+                return this.Lat == other.Lat && this.Lng == other.Lng;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as GoogleMapPosition);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
     }
 
     /// <summary>
@@ -98,9 +723,25 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Supplies information about a <see cref="DropableViewBase.AppointmentMove" /> event that is being raised.
+    /// </summary>
+    public class SchedulerAppointmentMoveEventArgs
+    {
+        /// <summary>
+        /// Gets or sets the appointment data.
+        /// </summary>
+        public AppointmentData Appointment { get; set; }
+
+        /// <summary>
+        /// Gets or sets the time span.
+        /// </summary>
+        public TimeSpan TimeSpan { get; set; }
+    }
+
+    /// <summary>
     /// Supplies information about a <see cref="RadzenMenu.Click" /> event that is being raised.
     /// </summary>
-    public class MenuItemEventArgs
+    public class MenuItemEventArgs : MouseEventArgs
     {
         /// <summary>
         /// Gets text of the clicked item.
@@ -148,18 +789,34 @@ namespace Radzen
         /// </summary>
         /// <value><c>true</c> if expandable; otherwise, <c>false</c>.</value>
         public bool Expandable { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating row index.
+        /// </summary>
+        public int Index { get; set; }
     }
 
     /// <summary>
-    /// Supplies information about a <see cref="RadzenGrid{TItem}.Render" /> event that is being raised.
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}" /> event that is being raised.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class GridRenderEventArgs<T>
+    public class GroupRowRenderEventArgs
     {
         /// <summary>
-        /// Gets the instance of the RadzenGrid component which has rendered.
+        /// Gets or sets the group row HTML attributes. They will apply to the table row (tr) element which RadzenDataGrid renders for every group row.
         /// </summary>
-        public RadzenGrid<T> Grid { get; internal set; }
+        public IDictionary<string, object> Attributes { get; private set; } = new Dictionary<string, object>();
+
+        /// <summary>
+        /// Gets the data item which the current row represents.
+        /// </summary>
+        public Group Group { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this group row is expanded.
+        /// </summary>
+        /// <value><c>true</c> if expanded; otherwise, <c>false</c>.</value>
+        public bool? Expanded { get; set; }
+
         /// <summary>
         /// Gets a value indicating whether this is the first time the RadzenGrid has rendered.
         /// </summary>
@@ -185,15 +842,14 @@ namespace Radzen
     }
 
     /// <summary>
-    /// Supplies information about a <see cref="RadzenGrid{TItem}.CellRender" /> event that is being raised.
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}.LoadSettings" /> event that is being raised.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class CellRenderEventArgs<T> : RowRenderEventArgs<T>
+    public class DataGridLoadSettingsEventArgs
     {
         /// <summary>
-        /// Gets the RadzenGridColumn which this cells represents.
+        /// Gets or sets the settings.
         /// </summary>
-        public RadzenGridColumn<T> Column { get; internal set; }
+        public DataGridSettings Settings { get; set; }
     }
 
     /// <summary>
@@ -223,6 +879,22 @@ namespace Radzen
         /// Gets the RadzenDataGridColumn which this cells represents.
         /// </summary>
         public RadzenDataGridColumn<T> Column { get; internal set; }
+    }
+
+    /// <summary>
+    /// Supplies information about a <see cref="RadzenTree.ItemContextMenu" /> event that is being raised.
+    /// </summary>
+    public class TreeItemContextMenuEventArgs : Microsoft.AspNetCore.Components.Web.MouseEventArgs
+    {
+        /// <summary>
+        /// Gets the tree item text.
+        /// </summary>
+        public string Text { get; internal set; }
+
+        /// <summary>
+        /// Gets the tree item value.
+        /// </summary>
+        public object Value { get; internal set; }
     }
 
     /// <summary>
@@ -256,11 +928,11 @@ namespace Radzen
         /// <summary>
         /// Gets or sets the number of bytes that have been uploaded.
         /// </summary>
-        public int Loaded { get; set; }
+        public long Loaded { get; set; }
         /// <summary>
         /// Gets the total number of bytes that need to be uploaded.
         /// </summary>
-        public int Total { get; set; }
+        public long Total { get; set; }
         /// <summary>
         /// Gets the progress as a percentage value (from <c>0</c> to <c>100</c>).
         /// </summary>
@@ -269,6 +941,10 @@ namespace Radzen
         /// Gets a collection of files that are being uploaded.
         /// </summary>
         public IEnumerable<FileInfo> Files { get; set; }
+        /// <summary>
+        /// Gets or sets a flag indicating whether the underlying XMLHttpRequest should be aborted.
+        /// </summary>
+        public bool Cancel { get; set; }
     }
 
     /// <summary>
@@ -285,21 +961,89 @@ namespace Radzen
         /// Gets the raw server response.
         /// </summary>
         public string RawResponse { get; set; }
+
+        /// <summary>
+        /// Gets a boolean value indicating if the upload was cancelled by the user.
+        /// </summary>
+        public bool Cancelled { get; set; }
     }
 
     /// <summary>
     /// Represents a file which the user selects for upload via <see cref="RadzenUpload" />.
     /// </summary>
-    public class FileInfo
+    public class FileInfo : IBrowserFile
     {
+        /// <summary>
+        /// Creates FileInfo.
+        /// </summary>
+        public FileInfo()
+        {
+            //
+        }
+
+        IBrowserFile source;
+        /// <summary>
+        /// Creates FileInfo with IBrowserFile as source.
+        /// </summary>
+        public FileInfo(IBrowserFile source)
+        {
+            this.source = source;
+        }
+
+        string _name;
         /// <summary>
         /// Gets the name of the selected file.
         /// </summary>
-        public string Name { get; set; }
+        public string Name
+        {
+            get
+            {
+                return _name ?? source.Name;
+            }
+            set
+            {
+                _name = value;
+            }
+        }
+
+        long _size;
         /// <summary>
         /// Gets the size (in bytes) of the selected file.
         /// </summary>
-        public int Size { get; set; }
+        public long Size
+        {
+            get
+            {
+                return _size != default(long) ? _size : source != null ? source.Size : 0;
+            }
+            set
+            {
+                _size = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the IBrowserFile.
+        /// </summary>
+        public IBrowserFile Source => source;
+
+        /// <summary>
+        /// Gets the LastModified.
+        /// </summary>
+        public DateTimeOffset LastModified => source.LastModified;
+
+        /// <summary>
+        /// Gets the ContentType.
+        /// </summary>
+        public string ContentType => source.ContentType;
+
+        /// <summary>
+        /// Open read stream.
+        /// </summary>
+        public System.IO.Stream OpenReadStream(long maxAllowedSize = 512000, CancellationToken cancellationToken = default)
+        {
+            return source.OpenReadStream(maxAllowedSize, cancellationToken);
+        }
     }
 
     /// <summary>
@@ -323,6 +1067,16 @@ namespace Radzen
         /// </summary>
         /// <value>The filter.</value>
         public string Filter { get; set; }
+        /// <summary>
+        /// Gets the filter expression as a collection of filter descriptors.
+        /// </summary>
+        /// <value>The filter parameters.</value>
+        public IEnumerable<FilterDescriptor> Filters { get; set; }
+        /// <summary>
+        /// Gets the sort expression as a collection of sort descriptors.
+        /// </summary>
+        /// <value>The sorts.</value>
+        public IEnumerable<SortDescriptor> Sorts { get; set; }
         /// <summary>
         /// Gets or sets the filter parameters.
         /// </summary>
@@ -398,6 +1152,36 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Specifies component density.
+    /// </summary>
+    public enum Density
+    {
+        /// <summary>
+        /// The default density.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// А high density compact mode.
+        /// </summary>
+        Compact
+    }
+
+    /// <summary>
+    /// Specifies the ways a component renders its popup.
+    /// </summary>
+    public enum PopupRenderMode
+    {
+        /// <summary>
+        /// The component renders its popup on-demand.
+        /// </summary>
+        OnDemand,
+        /// <summary>
+        /// The component renders its popup initially.
+        /// </summary>
+        Initial
+    }
+
+    /// <summary>
     /// Specifies the ways a <see cref="RadzenTabs" /> component renders its items.
     /// </summary>
     public enum TabRenderMode
@@ -422,9 +1206,17 @@ namespace Radzen
         /// </summary>
         Top,
         /// <summary>
+        /// The RadzenTabs titles are displayed at the top right side of the component.
+        /// </summary>
+        TopRight,
+        /// <summary>
         /// The RadzenTabs titles are displayed at the bottom of the component.
         /// </summary>
         Bottom,
+        /// <summary>
+        /// The RadzenTabs titles are displayed at the bottom right side of the component.
+        /// </summary>
+        BottomRight,
         /// <summary>
         /// The RadzenTabs titles are displayed at the left side of the component.
         /// </summary>
@@ -436,22 +1228,62 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Specifies the ways a <see cref="RadzenTimeline" /> component renders line and content items.
+    /// </summary>
+    public enum LinePosition
+    {
+        /// <summary>
+        /// The RadzenTimeline line is displayed at the center of the component.
+        /// </summary>
+        Center,
+        /// <summary>
+        /// The RadzenTimeline line is displayed at the center of the component with alternating content position.
+        /// </summary>
+        Alternate,
+        /// <summary>
+        /// The RadzenTimeline line is displayed at the start of the component.
+        /// </summary>
+        Start,
+        /// <summary>
+        /// The RadzenTimeline line is displayed at the end of the component.
+        /// </summary>
+        End,
+        /// <summary>
+        /// The RadzenTimeline line is displayed at the left side of the component.
+        /// </summary>
+        Left,
+        /// <summary>
+        /// The RadzenTimeline line is displayed at the right side of the component.
+        /// </summary>
+        Right,
+        /// <summary>
+        /// The RadzenTimeline line is displayed at the top of the component.
+        /// </summary>
+        Top,
+        /// <summary>
+        /// The RadzenTimeline line is displayed at the bottom of the component.
+        /// </summary>
+        Bottom
+    }
+
+    /// <summary>
     /// Specifies the position at which a Radzen Blazor component renders its built-in <see cref="RadzenPager" />.
     /// </summary>
+    [Flags]
     public enum PagerPosition
     {
         /// <summary>
         /// RadzenPager is displayed at the top of the component.
         /// </summary>
-        Top,
+        Top = 1,
         /// <summary>
         /// RadzenPager is displayed at the bottom of the component.
         /// </summary>
-        Bottom,
+        Bottom = 2,
         /// <summary>
         /// RadzenPager is displayed at the top and at the bottom of the component.
         /// </summary>
-        TopAndBottom
+        TopAndBottom = Top | Bottom
     }
 
     /// <summary>
@@ -500,6 +1332,33 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Specifies the grid lines of <see cref="RadzenDataGrid{TItem}" />.
+    /// </summary>
+    public enum DataGridGridLines
+    {
+        /// <summary>
+        /// Theme default.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Both horizontal and vertical grid lines.
+        /// </summary>
+        Both,
+        /// <summary>
+        /// No grid lines.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Horizontal grid lines.
+        /// </summary>
+        Horizontal,
+        /// <summary>
+        /// Vertical grid lines.
+        /// </summary>
+        Vertical
+    }
+
+    /// <summary>
     /// Specifies the severity of a <see cref="RadzenNotification" />. Severity changes the visual styling of the RadzenNotification (icon and background color).
     /// </summary>
     public enum NotificationSeverity
@@ -513,7 +1372,7 @@ namespace Radzen
         /// </summary>
         Info,
         /// <summary>
-        /// Represents a success. 
+        /// Represents a success.
         /// </summary>
         Success,
         /// <summary>
@@ -523,7 +1382,139 @@ namespace Radzen
     }
 
     /// <summary>
-    /// Specifies the behavior of <see cref="RadzenProgressBar" />.
+    /// Specifies the display style or severity of a <see cref="RadzenAlert" />. Affects the visual styling of RadzenAlert (background and text color).
+    /// </summary>
+    public enum AlertStyle
+    {
+        /// <summary>
+        /// Primary styling. Similar to primary buttons.
+        /// </summary>
+        Primary,
+        /// <summary>
+        /// Secondary styling. Similar to secondary buttons.
+        /// </summary>
+        Secondary,
+        /// <summary>
+        /// Light styling. Similar to light buttons.
+        /// </summary>
+        Light,
+        /// <summary>
+        /// Base styling. Similar to base buttons.
+        /// </summary>
+        Base,
+        /// <summary>
+        /// Dark styling. Similar to dark buttons.
+        /// </summary>
+        Dark,
+        /// <summary>
+        /// Success styling.
+        /// </summary>
+        Success,
+        /// <summary>
+        /// Danger styling.
+        /// </summary>
+        Danger,
+        /// <summary>
+        /// Warning styling.
+        /// </summary>
+        Warning,
+        /// <summary>
+        /// Informative styling.
+        /// </summary>
+        Info
+    }
+
+    /// <summary>
+    /// Specifies the size of a <see cref="RadzenAlert" />.
+    /// </summary>
+    public enum AlertSize
+    {
+        /// <summary>
+        /// The smallest alert.
+        /// </summary>
+        ExtraSmall,
+        /// <summary>
+        /// A alert smaller than the default.
+        /// </summary>
+        Small,
+        /// <summary>
+        /// The default size of an alert.
+        /// </summary>
+        Medium,
+        /// <summary>
+        /// An alert larger than the default.
+        /// </summary>
+        Large
+    }
+
+    /// <summary>
+    /// Specifies the size of a point in <see cref="RadzenTimelineItem" />.
+    /// </summary>
+    public enum PointSize
+    {
+        /// <summary>
+        /// The smallest.
+        /// </summary>
+        ExtraSmall,
+        /// <summary>
+        /// Smaller than the default.
+        /// </summary>
+        Small,
+        /// <summary>
+        /// The default size.
+        /// </summary>
+        Medium,
+        /// <summary>
+        /// Larger than the default.
+        /// </summary>
+        Large
+    }
+
+    /// <summary>
+    /// Specifies the display style or severity of a <see cref="RadzenTimelineItem" />
+    /// </summary>
+    public enum PointStyle
+    {
+        /// <summary>
+        /// Primary styling. Similar to primary buttons.
+        /// </summary>
+        Primary,
+        /// <summary>
+        /// Secondary styling. Similar to secondary buttons.
+        /// </summary>
+        Secondary,
+        /// <summary>
+        /// Light styling. Similar to light buttons.
+        /// </summary>
+        Light,
+        /// <summary>
+        /// Base styling. Similar to base buttons.
+        /// </summary>
+        Base,
+        /// <summary>
+        /// Dark styling. Similar to dark buttons.
+        /// </summary>
+        Dark,
+        /// <summary>
+        /// Success styling.
+        /// </summary>
+        Success,
+        /// <summary>
+        /// Danger styling.
+        /// </summary>
+        Danger,
+        /// <summary>
+        /// Warning styling.
+        /// </summary>
+        Warning,
+        /// <summary>
+        /// Informative styling.
+        /// </summary>
+        Info
+    }
+
+    /// <summary>
+    /// Specifies the behavior of <see cref="RadzenProgressBar" /> or <see cref="RadzenProgressBarCircular" />.
     /// </summary>
     public enum ProgressBarMode
     {
@@ -532,9 +1523,75 @@ namespace Radzen
         /// </summary>
         Determinate,
         /// <summary>
-        /// RadzenProgressBar displays continuous animation. 
+        /// RadzenProgressBar displays continuous animation.
         /// </summary>
         Indeterminate
+    }
+
+    /// <summary>
+    /// Specifies the display style of a <see cref="RadzenProgressBar" /> and <see cref="RadzenProgressBarCircular" />. Affects the visual styling of RadzenProgressBar (background and text color) and RadzenProgressBarCircular (stroke and text color).
+    /// </summary>
+    public enum ProgressBarStyle
+    {
+        /// <summary>
+        /// Primary styling. Similar to primary buttons.
+        /// </summary>
+        Primary,
+        /// <summary>
+        /// Secondary styling. Similar to secondary buttons.
+        /// </summary>
+        Secondary,
+        /// <summary>
+        /// Light styling. Similar to light buttons.
+        /// </summary>
+        Light,
+        /// <summary>
+        /// Base styling. Similar to base buttons.
+        /// </summary>
+        Base,
+        /// <summary>
+        /// Dark styling. Similar to dark buttons.
+        /// </summary>
+        Dark,
+        /// <summary>
+        /// Success styling.
+        /// </summary>
+        Success,
+        /// <summary>
+        /// Danger styling.
+        /// </summary>
+        Danger,
+        /// <summary>
+        /// Warning styling.
+        /// </summary>
+        Warning,
+        /// <summary>
+        /// Informative styling.
+        /// </summary>
+        Info
+    }
+
+    /// <summary>
+    /// Specifies the size of a <see cref="RadzenProgressBarCircular" />.
+    /// </summary>
+    public enum ProgressBarCircularSize
+    {
+        /// <summary>
+        /// The default size of a circular progress bar.
+        /// </summary>
+        Medium,
+        /// <summary>
+        /// A circular progress bar larger than the default.
+        /// </summary>
+        Large,
+        /// <summary>
+        /// A circular progress bar smaller than the default.
+        /// </summary>
+        Small,
+        /// <summary>
+        /// The smallest circular progress bar.
+        /// </summary>
+        ExtraSmall
     }
 
     /// <summary>
@@ -550,6 +1607,99 @@ namespace Radzen
         /// Sibling items are displayed below each other.
         /// </summary>
         Vertical
+    }
+
+    /// <summary>
+    /// Represents whether items are forced onto one line or can wrap onto multiple lines.
+    /// </summary>
+    public enum FlexWrap
+    {
+        /// <summary>
+        /// The items are laid out in a single line.
+        /// </summary>
+        NoWrap,
+        /// <summary>
+        /// The items break into multiple lines.
+        /// </summary>
+        Wrap,
+        /// <summary>
+        /// The items break into multiple lines reversed.
+        /// </summary>
+        WrapReverse
+    }
+
+    /// <summary>
+    /// Represents content justification of Stack items.
+    /// </summary>
+    public enum JustifyContent
+    {
+        /// <summary>
+        /// Normal content justification of Stack items.
+        /// </summary>
+        Normal,
+        /// <summary>
+        /// Center content justification of Stack items.
+        /// </summary>
+        Center,
+        /// <summary>
+        /// Start content justification of Stack items.
+        /// </summary>
+        Start,
+        /// <summary>
+        /// End content justification of Stack items.
+        /// </summary>
+        End,
+        /// <summary>
+        /// Left content justification of Stack items.
+        /// </summary>
+        Left,
+        /// <summary>
+        /// Right content justification of Stack items.
+        /// </summary>
+        Right,
+        /// <summary>
+        /// SpaceBetween content justification of Stack items.
+        /// </summary>
+        SpaceBetween,
+        /// <summary>
+        /// SpaceAround content justification of Stack items.
+        /// </summary>
+        SpaceAround,
+        /// <summary>
+        /// SpaceEvenly content justification of Stack items.
+        /// </summary>
+        SpaceEvenly,
+        /// <summary>
+        /// Stretch content justification of Stack items.
+        /// </summary>
+        Stretch
+    }
+
+    /// <summary>
+    /// Represents the alignment of Stack items.
+    /// </summary>
+    public enum AlignItems
+    {
+        /// <summary>
+        /// Normal items alignment.
+        /// </summary>
+        Normal,
+        /// <summary>
+        /// Center items alignment.
+        /// </summary>
+        Center,
+        /// <summary>
+        /// Start items alignment.
+        /// </summary>
+        Start,
+        /// <summary>
+        /// End items alignment.
+        /// </summary>
+        End,
+        /// <summary>
+        /// Stretch items alignment.
+        /// </summary>
+        Stretch
     }
 
     /// <summary>
@@ -596,9 +1746,17 @@ namespace Radzen
         /// </summary>
         Medium,
         /// <summary>
+        /// A button larger than the default.
+        /// </summary>
+        Large,
+        /// <summary>
         /// A button smaller than the default.
         /// </summary>
-        Small
+        Small,
+        /// <summary>
+        /// The smallest button.
+        /// </summary>
+        ExtraSmall
     }
 
     /// <summary>
@@ -619,6 +1777,14 @@ namespace Radzen
         /// </summary>
         Light,
         /// <summary>
+        /// The base UI styling.
+        /// </summary>
+        Base,
+        /// <summary>
+        /// A button with dark styling.
+        /// </summary>
+        Dark,
+        /// <summary>
         /// A button with success styling.
         /// </summary>
         Success,
@@ -637,18 +1803,76 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Specifies the design variant of <see cref="RadzenButton" /> and <see cref="RadzenBadge" />. Affects the visual styling of RadzenButton and RadzenBadge.
+    /// </summary>
+    public enum Variant
+    {
+        /// <summary>
+        /// A filled appearance.
+        /// </summary>
+        Filled,
+        /// <summary>
+        /// A flat appearance without any drop shadows.
+        /// </summary>
+        Flat,
+        /// <summary>
+        /// A text appearance.
+        /// </summary>
+        Text,
+        /// <summary>
+        /// An outlined appearance.
+        /// </summary>
+        Outlined
+    }
+
+    /// <summary>
+    /// Specifies the color shade of a <see cref="RadzenButton" />. Affects the visual styling of RadzenButton.
+    /// </summary>
+    public enum Shade
+    {
+        /// <summary>
+        /// A button with lighter styling.
+        /// </summary>
+        Lighter,
+        /// <summary>
+        /// A button with light styling.
+        /// </summary>
+        Light,
+        /// <summary>
+        /// A button with default styling.
+        /// </summary>
+        Default,
+        /// <summary>
+        /// A button with dark styling.
+        /// </summary>
+        Dark,
+        /// <summary>
+        /// A button with darker styling.
+        /// </summary>
+        Darker
+    }
+
+    /// <summary>
     /// Specifies the filtering mode of <see cref="RadzenDataGrid{TItem}" />.
     /// </summary>
     public enum FilterMode
     {
         /// <summary>
-        /// The components displays inline filtering UI and filters as you type.
+        /// The component displays inline filtering UI and filters as you type.
         /// </summary>
         Simple,
         /// <summary>
+        /// The component displays inline filtering UI and filters as you type combined with filter operator menu.
+        /// </summary>
+        SimpleWithMenu,
+        /// <summary>
         /// The component displays a popup filtering UI and allows you to pick filtering operator and or filter by multiple values.
         /// </summary>
-        Advanced
+        Advanced,
+        /// <summary>
+        /// The component displays a popup filtering UI and allows you to pick multiple values from list of all values.
+        /// </summary>
+        CheckBoxList
     }
 
     /// <summary>
@@ -746,13 +1970,33 @@ namespace Radzen
         /// </summary>
         DoesNotContain,
         /// <summary>
+        /// Satisfied if the current value is in the specified value.
+        /// </summary>
+        In,
+        /// <summary>
+        /// Satisfied if the current value is not in the specified value.
+        /// </summary>
+        NotIn,
+        /// <summary>
         /// Satisfied if the current value is null.
         /// </summary>
         IsNull,
         /// <summary>
+        /// Satisfied if the current value is <see cref="string.Empty"/>.
+        /// </summary>
+        IsEmpty,
+        /// <summary>
         /// Satisfied if the current value is not null.
         /// </summary>
-        IsNotNull
+        IsNotNull,
+        /// <summary>
+        /// Satisfied if the current value is not <see cref="string.Empty"/>.
+        /// </summary>
+        IsNotEmpty,
+        /// <summary>
+        /// Custom operator if not need to generate the filter.
+        /// </summary>
+        Custom
     }
 
     /// <summary>
@@ -771,7 +2015,38 @@ namespace Radzen
         /// <summary>
         /// The text is centered in its container.
         /// </summary>
-        Center
+        Center,
+        /// <summary>The text is justified.</summary>
+        Justify,
+        /// <summary>Same as justify, but also forces the last line to be justified.</summary>
+        JustifyAll,
+        /// <summary>The same as left if direction is left-to-right and right if direction is right-to-left..</summary>
+        Start,
+        /// <summary>The same as right if direction is left-to-right and left if direction is right-to-left..</summary>
+        End
+    }
+
+    /// <summary>
+    /// Specifies horizontal alignment.
+    /// </summary>
+    public enum HorizontalAlign
+    {
+        /// <summary>
+        /// Left horizontal alignment.
+        /// </summary>
+        Left,
+        /// <summary>
+        /// Right horizontal alignment.
+        /// </summary>
+        Right,
+        /// <summary>
+        /// Center horizontal alignment.
+        /// </summary>
+        Center,
+        /// <summary>
+        /// Justify horizontal alignment.
+        /// </summary>
+        Justify
     }
 
     /// <summary>
@@ -791,6 +2066,14 @@ namespace Radzen
         /// Light styling. Similar to light buttons.
         /// </summary>
         Light,
+        /// <summary>
+        /// Base styling. Similar to base buttons.
+        /// </summary>
+        Base,
+        /// <summary>
+        /// Dark styling. Similar to dark buttons.
+        /// </summary>
+        Dark,
         /// <summary>
         /// Success styling.
         /// </summary>
@@ -827,6 +2110,14 @@ namespace Radzen
         /// </summary>
         Light,
         /// <summary>
+        /// Base styling. Similar to base buttons.
+        /// </summary>
+        Base,
+        /// <summary>
+        /// Dark styling. Similar to dark buttons.
+        /// </summary>
+        Dark,
+        /// <summary>
         /// Success styling.
         /// </summary>
         Success,
@@ -845,6 +2136,89 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}.PickedColumnsChanged" /> event that is being raised.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class DataGridPickedColumnsChangedEventArgs<T>
+    {
+        /// <summary>
+        /// Gets the picked columns.
+        /// </summary>
+        public IEnumerable<RadzenDataGridColumn<T>> Columns { get; internal set; }
+    }
+
+    /// <summary>
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}.Sort" /> event that is being raised.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class DataGridColumnSortEventArgs<T>
+    {
+        /// <summary>
+        /// Gets the sorted RadzenDataGridColumn.
+        /// </summary>
+        public RadzenDataGridColumn<T> Column { get; internal set; }
+
+        /// <summary>
+        /// Gets the new sort order of the sorted column.
+        /// </summary>
+        public SortOrder? SortOrder { get; internal set; }
+    }
+
+    /// <summary>
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}.Group" /> event that is being raised.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class DataGridColumnGroupEventArgs<T>
+    {
+        /// <summary>
+        /// Gets the sorted RadzenDataGridColumn.
+        /// </summary>
+        public RadzenDataGridColumn<T> Column { get; internal set; }
+
+        /// <summary>
+        /// Gets the new sort order of the sorted column.
+        /// </summary>
+        public GroupDescriptor GroupDescriptor { get; internal set; }
+    }
+
+    /// <summary>
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}.Filter" /> event that is being raised.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class DataGridColumnFilterEventArgs<T>
+    {
+        /// <summary>
+        /// Gets the filtered RadzenDataGridColumn.
+        /// </summary>
+        public RadzenDataGridColumn<T> Column { get; internal set; }
+
+        /// <summary>
+        /// Gets the new filter value of the filtered column.
+        /// </summary>
+        public object FilterValue { get; internal set; }
+
+        /// <summary>
+        /// Gets the new second filter value of the filtered column.
+        /// </summary>
+        public object SecondFilterValue { get; internal set; }
+
+        /// <summary>
+        /// Gets the new filter operator of the filtered column.
+        /// </summary>
+        public FilterOperator FilterOperator { get; internal set; }
+
+        /// <summary>
+        /// Gets the new second filter operator of the filtered column.
+        /// </summary>
+        public FilterOperator SecondFilterOperator { get; internal set; }
+
+        /// <summary>
+        /// Gets the new logical filter operator of the filtered column.
+        /// </summary>
+        public LogicalFilterOperator LogicalFilterOperator { get; internal set; }
+    }
+
+    /// <summary>
     /// Supplies information about a <see cref="RadzenDataGrid{TItem}.ColumnResized" /> event that is being raised.
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -854,10 +2228,33 @@ namespace Radzen
         /// Gets the resized RadzenDataGridColumn.
         /// </summary>
         public RadzenDataGridColumn<T> Column { get; internal set; }
+
         /// <summary>
-        /// Gets new the width of the resized column.
+        /// Gets the new width of the resized column.
         /// </summary>
         public double Width { get; internal set; }
+    }
+
+    /// <summary>
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}.ColumnReordering" /> event that is being raised.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class DataGridColumnReorderingEventArgs<T>
+    {
+        /// <summary>
+        /// Gets the reordered RadzenDataGridColumn.
+        /// </summary>
+        public RadzenDataGridColumn<T> Column { get; internal set; }
+        /// <summary>
+        /// Gets the reordered to RadzenDataGridColumn.
+        /// </summary>
+        public RadzenDataGridColumn<T> ToColumn { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets a value which will cancel the event.
+        /// </summary>
+        /// <value><c>true</c> to cancel the event; otherwise, <c>false</c>.</value>
+        public bool Cancel { get; set; }
     }
 
     /// <summary>
@@ -878,22 +2275,6 @@ namespace Radzen
         /// Gets the new index of the column.
         /// </summary>
         public int NewIndex { get; internal set; }
-    }
-
-    /// <summary>
-    /// Supplies information about a <see cref="RadzenGrid{TItem}.ColumnResized" /> event that is being raised.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class ColumnResizedEventArgs<T>
-    {
-        /// <summary>
-        /// Gets the resized RadzenGridColumn.
-        /// </summary>
-        public RadzenGridColumn<T> Column { get; internal set; }
-        /// <summary>
-        /// Gets the new width of the column.
-        /// </summary>
-        public double Width { get; internal set; }
     }
 
     /// <summary>
@@ -934,6 +2315,42 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Represents a filter in a component that supports filtering.
+    /// </summary>
+    public class CompositeFilterDescriptor
+    {
+        /// <summary>
+        /// Gets or sets the name of the filtered property.
+        /// </summary>
+        /// <value>The property.</value>
+        public string Property { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value to filter by.
+        /// </summary>
+        /// <value>The filter value.</value>
+        public object FilterValue { get; set; }
+
+        /// <summary>
+        /// Gets or sets the operator which will compare the property value with <see cref="FilterValue" />.
+        /// </summary>
+        /// <value>The filter operator.</value>
+        public FilterOperator? FilterOperator { get; set; }
+
+        /// <summary>
+        /// Gets or sets the logic used to combine the outcome of filtering by <see cref="FilterValue" />.
+        /// </summary>
+        /// <value>The logical filter operator.</value>
+        public LogicalFilterOperator LogicalFilterOperator { get; set; }
+
+        /// <summary>
+        /// Gets or sets the filters.
+        /// </summary>
+        /// <value>The filters.</value>
+        public IEnumerable<CompositeFilterDescriptor> Filters { get; set; }
+    }
+
+    /// <summary>
     /// Represents a sorting description. Used in components that support sorting.
     /// </summary>
     public class SortDescriptor
@@ -960,11 +2377,24 @@ namespace Radzen
         /// </summary>
         /// <value>The property.</value>
         public string Property { get; set; }
+
+        /// <summary>
+        /// Gets or sets the sort order.
+        /// </summary>
+        /// <value>The sort order.</value>
+        public SortOrder? SortOrder { get; set; }
+
         /// <summary>
         /// Gets or sets the title displayed in the group.
         /// </summary>
         /// <value>The title.</value>
         public string Title { get; set; }
+
+        /// <summary>
+        /// Gets or sets the format string used to display the key in the group.
+        /// </summary>
+        /// <value>The format string.</value>
+        public string FormatString { get; set; }
 
         /// <summary>
         /// Gets the title of the group.
@@ -1030,6 +2460,71 @@ namespace Radzen
         /// </summary>
         /// <value>The sorts.</value>
         public IEnumerable<SortDescriptor> Sorts { get; set; }
+    }
+
+    /// <summary>
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}.LoadChildData" /> event that is being raised.
+    /// </summary>
+    public class DataGridLoadChildDataEventArgs<T>
+    {
+        /// <summary>
+        /// Gets or sets the data.
+        /// </summary>
+        /// <value>The data.</value>
+        public IEnumerable<T> Data { get; set; }
+
+        /// <summary>
+        /// Gets the item.
+        /// </summary>
+        /// <value>The item.</value>
+        public T Item { get; internal set; }
+    }
+
+    internal class DataGridChildData<T>
+    {
+        internal DataGridChildData<T> ParentChildData { get; set; }
+        internal int Level { get; set; }
+        internal IEnumerable<T> Data { get; set; }
+    }
+
+    /// <summary>
+    /// Supplies information about a <see cref="RadzenDataGrid{TItem}.LoadColumnFilterData" /> event that is being raised.
+    /// </summary>
+    public class DataGridLoadColumnFilterDataEventArgs<T>
+    {
+        /// <summary>
+        /// Gets or sets the data.
+        /// </summary>
+        /// <value>The data.</value>
+        public IEnumerable Data { get; set; }
+
+        /// <summary>
+        /// Gets or sets the total data count.
+        /// </summary>
+        /// <value>The total data count.</value>
+        public int Count { get; set; }
+
+        /// <summary>
+        /// Gets how many items to skip. Related to paging and the current page. Usually used with the <see cref="Enumerable.Skip{TSource}(IEnumerable{TSource}, int)"/> LINQ method.
+        /// </summary>
+        public int? Skip { get; set; }
+        /// <summary>
+        /// Gets how many items to take. Related to paging and the current page size. Usually used with the <see cref="Enumerable.Take{TSource}(IEnumerable{TSource}, int)"/> LINQ method.
+        /// </summary>
+        /// <value>The top.</value>
+        public int? Top { get; set; }
+
+        /// <summary>
+        /// Gets the filter expression as a string.
+        /// </summary>
+        /// <value>The filter.</value>
+        public string Filter { get; internal set; }
+
+        /// <summary>
+        /// Gets the column.
+        /// </summary>
+        /// <value>The column.</value>
+        public RadzenDataGridColumn<T> Column { get; internal set; }
     }
 
     /// <summary>
@@ -1212,6 +2707,26 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Supplies information about a <see cref="RadzenChart.LegendClick" /> event that is being raised.
+    /// </summary>
+    public class LegendClickEventArgs
+    {
+        /// <summary>
+        /// Gets the data at the clicked location.
+        /// </summary>
+        public object Data { get; set; }
+        /// <summary>
+        /// Gets the title of the clicked series. Determined by <see cref="CartesianSeries{TItem}.Title" />.
+        /// </summary>
+        /// <value>The title.</value>
+        public string Title { get; set; }
+        /// <summary>
+        /// Gets the visibility of the clicked legend. Determined by <see cref="CartesianSeries{TItem}.IsVisible" />. Always visible for Pie Charts.
+        /// </summary>
+        /// <value>The visibility.</value>
+        public bool IsVisible { get; set; }
+    }
+    /// <summary>
     /// Supplies information about a <see cref="RadzenHtmlEditor.Execute" /> event that is being raised.
     /// </summary>
     public class HtmlEditorExecuteEventArgs
@@ -1281,9 +2796,17 @@ namespace Radzen
         /// </summary>
         public Func<object, string> Text { get; set; }
         /// <summary>
+        /// Gets or sets the function which returns a value for the <see cref="RadzenTreeItem.Checkable" /> of a child item.
+        /// </summary>
+        public Func<object, bool> Checkable { get; set; }
+        /// <summary>
         /// Gets or sets the name of the property which provides the value for the <see cref="RadzenTreeItem.Text" /> of a child item.
         /// </summary>
         public string TextProperty { get; set; }
+        /// <summary>
+        /// Gets or sets the name of the property which provides the value for the <see cref="RadzenTreeItem.Checkable" /> of a child item.
+        /// </summary>
+        public string CheckableProperty { get; set; }
         /// <summary>
         /// Gets or sets a function which returns whether a child item has children of its own. Called with an item from <see cref="Data" />.
         /// By default all items are considered to have children.
@@ -1307,6 +2830,51 @@ namespace Radzen
     }
 
     /// <summary>
+    /// Supplies information about a <see cref="RadzenTree" /> item render event that is being raised.
+    /// </summary>
+    public class TreeItemRenderEventArgs
+    {
+        /// <summary>
+        /// Gets or sets the item HTML attributes.
+        /// </summary>
+        public IDictionary<string, object> Attributes { get; private set; } = new Dictionary<string, object>();
+
+        bool _checkedSet;
+        internal bool CheckedSet()
+        {
+            return _checkedSet;
+        }
+
+        bool? _checked;
+        /// <summary>
+        /// Gets or sets a value indicating whether this item is checked.
+        /// </summary>
+        /// <value><c>true</c> if expanded; otherwise, <c>false</c>.</value>
+        public bool? Checked
+        {
+            get
+            {
+                return _checked;
+            }
+            set
+            {
+                _checkedSet = true;
+                _checked = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets tree item.
+        /// </summary>
+        public object Value { get; internal set; }
+
+        /// <summary>
+        /// Gets child items.
+        /// </summary>
+        public IEnumerable Data { get; internal set; }
+    }
+
+    /// <summary>
     /// Supplies information about a <see cref="RadzenLogin.Login" /> event that is being raised.
     /// </summary>
     public class LoginArgs
@@ -1319,6 +2887,9 @@ namespace Radzen
         /// Gets or sets the password.
         /// </summary>
         public string Password { get; set; }
+
+        /// <summary> Gets or sets a value indicating whether the user wants to remember their credentials. </summary>
+        public bool RememberMe { get; set; }
     }
 
     /// <summary>
@@ -1342,6 +2913,11 @@ namespace Radzen
             if ((Nullable.GetUnderlyingType(type) ?? type) == typeof(Guid) && value is string)
             {
                 return Guid.Parse((string)value);
+            }
+
+            if (Nullable.GetUnderlyingType(type)?.IsEnum == true)
+            {
+                return Enum.Parse(Nullable.GetUnderlyingType(type), value.ToString());
             }
 
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
@@ -1371,21 +2947,65 @@ namespace Radzen
         /// <typeparam name="TItem">The owner type.</typeparam>
         /// <typeparam name="TValue">The value type.</typeparam>
         /// <param name="propertyName">Name of the property to return.</param>
+        /// <param name="type">Type of the object.</param>
         /// <returns>A function which return the specified property by its name.</returns>
-        public static Func<TItem, TValue> Getter<TItem, TValue>(string propertyName)
+        public static Func<TItem, TValue> Getter<TItem, TValue>(string propertyName, Type type = null)
         {
-            var arg = Expression.Parameter(typeof(TItem));
-
-            Expression body = arg;
-
-            foreach (var member in propertyName.Split("."))
+            if (propertyName.Contains("["))
             {
-                body = Expression.PropertyOrField(body, member);
+                return DynamicExpressionParser.ParseLambda<TItem, TValue>(null, false, propertyName).Compile();
             }
+            else
+            {
+                var arg = Expression.Parameter(typeof(TItem));
 
-            body = Expression.Convert(body, typeof(TValue));
+                Expression body = arg;
 
-            return Expression.Lambda<Func<TItem, TValue>>(body, arg).Compile();
+                if (type != null)
+                {
+                    body = Expression.Convert(body, type);
+                }
+
+                foreach (var member in propertyName.Split("."))
+                {
+                    if (body.Type.IsInterface)
+                    {
+                        body = Expression.Property(body,
+                            new [] { body.Type }.Concat(body.Type.GetInterfaces()).FirstOrDefault(t => t.GetProperty(member) != null),
+                            member
+                        );
+                    }
+                    else
+                    {
+                        try
+                        {
+                            body = Expression.PropertyOrField(body, member);
+                        }
+                        catch (AmbiguousMatchException)
+                        {
+                            var property = body.Type.GetProperty(member, BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+
+                            if (property != null)
+                            {
+                                body = Expression.Property(body, property);
+                            }
+                            else
+                            {
+                                var field = body.Type.GetField(member, BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+
+                                if (field != null)
+                                {
+                                    body = Expression.Field(body, field);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                body = Expression.Convert(body, typeof(TValue));
+
+                return Expression.Lambda<Func<TItem, TValue>>(body, arg).Compile();
+            }
         }
 
         /// <summary>
@@ -1402,8 +3022,46 @@ namespace Radzen
             {
                 return true;
             }
-
+#if NET6_0_OR_GREATER
+            if (type == typeof(DateOnly))
+            {
+                return true;
+            }
+#endif
             return false;
+        }
+
+        /// <summary>
+        /// Determines whether the specified type is a DateOnly.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <returns><c>true</c> if the specified type is a DateOnly instance or nullable DateOnly; otherwise, <c>false</c>.</returns>
+        public static bool IsDateOnly(Type source)
+        {
+            if (source == null) return false;
+            var type = source.IsGenericType ? source.GetGenericArguments()[0] : source;
+
+#if NET6_0_OR_GREATER
+            if (type == typeof(DateOnly))
+            {
+                return true;
+            }
+#endif
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether the specified type is a DateOnly.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <returns><c>true</c> if the specified type is a DateOnly instance or nullable DateOnly; otherwise, <c>false</c>.</returns>
+        public static object DateOnlyFromDateTime(DateTime source)
+        {
+            object result = null;
+#if NET6_0_OR_GREATER
+            result = DateOnly.FromDateTime(source);
+#endif
+            return result;
         }
 
         /// <summary>
@@ -1436,7 +3094,15 @@ namespace Radzen
         /// <param name="property">The property.</param>
         public static string GetProperty(string property)
         {
-            var type = Type.GetType($"System.{property}");
+            Type type = null;
+            try
+            {
+                type = Type.GetType($"System.{property}");
+            }
+            catch
+            {
+                // ignore the exception and assume the property start without a type and do not need the '@' prefix
+            }
             var propertyName = $"{(type != null ? "@" : "")}{property}";
 
             if (propertyName.IndexOf(".") != -1)
@@ -1483,7 +3149,7 @@ namespace Radzen
         {
             var type = data.GetType();
             var arg = Expression.Parameter(typeof(object));
-            var body = Expression.Property(Expression.Convert(arg, type), propertyName);
+            var body = Expression.Convert(Expression.Property(Expression.Convert(arg, type), propertyName), typeof(T));
 
             return Expression.Lambda<Func<object, T>>(body, arg).Compile();
         }
@@ -1566,6 +3232,31 @@ namespace Radzen
         }
 
         /// <summary>
+        /// Determines whether the specified type is an enum.
+        /// </summary>
+        /// <param name="source">The type.</param>
+        /// <returns><c>true</c> if the specified source is an enum; otherwise, <c>false</c>.</returns>
+        public static bool IsEnum(Type source)
+        {
+            if (source == null)
+                return false;
+
+            return source.IsEnum;
+        }
+
+        /// <summary>
+        /// Determines whether the specified type is a Nullable enum.
+        /// </summary>
+        /// <param name="source">The type.</param>
+        /// <returns><c>true</c> if the specified source is an enum; otherwise, <c>false</c>.</returns>
+        public static bool IsNullableEnum(Type source)
+        {
+            if (source == null) return false;
+            Type u = Nullable.GetUnderlyingType(source);
+            return (u != null) && u.IsEnum;
+        }
+
+        /// <summary>
         /// Determines whether the specified type is anonymous.
         /// </summary>
         /// <param name="type">The type.</param>
@@ -1587,6 +3278,22 @@ namespace Radzen
             return false;
         }
 
+        /// <summary>
+        /// Method to only replace first occurence of a substring in a string
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="search"></param>
+        /// <param name="replace"></param>
+        /// <returns></returns>
+        public static string ReplaceFirst(this string text, string search, string replace)
+        {
+            int pos = text.IndexOf(search, StringComparison.Ordinal);
+            if (pos < 0)
+            {
+                return text;
+            }
+            return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+        }
 
         /// <summary>
         /// Gets the type of the property.
@@ -1599,15 +3306,45 @@ namespace Radzen
             if (property.Contains("."))
             {
                 var part = property.Split('.').FirstOrDefault();
-                return GetPropertyType(type?.GetProperty(part)?.PropertyType, property.Replace($"{part}.", ""));
+                return GetPropertyType(GetPropertyTypeIncludeInterface(type, part), property.ReplaceFirst($"{part}.", ""));
             }
 
-            return type?.GetProperty(property)?.PropertyType;
+            return GetPropertyTypeIncludeInterface(type, property);
+        }
+
+        private static Type GetPropertyTypeIncludeInterface(Type type, string property)
+        {
+            if (type != null)
+            {
+                return !type.IsInterface ?
+                    type.GetProperty(property)?.PropertyType :
+                        new Type[] { type }
+                        .Concat(type.GetInterfaces())
+                        .FirstOrDefault(t => t.GetProperty(property) != null)?
+                        .GetProperty(property)?.PropertyType;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the dynamic property expression when binding to IDictionary.
+        /// </summary>
+        /// <param name="name">The property name.</param>
+        /// <param name="type">The property type.</param>
+        /// <returns>Dynamic property expression.</returns>
+        public static string GetDynamicPropertyExpression(string name, Type type)
+        {
+            var isEnum = type.IsEnum || Nullable.GetUnderlyingType(type)?.IsEnum == true;
+            var typeName = isEnum ? "Enum" : (Nullable.GetUnderlyingType(type) ?? type).Name;
+            var typeFunc = $@"{typeName}{(!isEnum && Nullable.GetUnderlyingType(type) != null ? "?" : "")}";
+
+            return $@"{typeFunc}(it[""{name}""])";
         }
     }
 
     /// <summary>
-    /// Represents the common <see cref="RadzenTemplateForm{TItem}" /> API used by 
+    /// Represents the common <see cref="RadzenTemplateForm{TItem}" /> API used by
     /// its items. Injected as a cascading property in <see cref="IRadzenFormComponent" />.
     /// </summary>
     public interface IRadzenForm
@@ -1663,6 +3400,11 @@ namespace Radzen
         /// </summary>
         /// <value>The field identifier.</value>
         FieldIdentifier FieldIdentifier { get; }
+
+        /// <summary>
+        /// Sets the focus.
+        /// </summary>
+        ValueTask FocusAsync();
     }
 
     /// <summary>
@@ -1709,6 +3451,52 @@ namespace Radzen
         /// <value>The content of the child.</value>
         [Parameter]
         public RenderFragment ChildContent { get; set; }
+    }
+
+    /// <summary>
+    /// A base class of row/col components.
+    /// </summary>
+    public class RadzenFlexComponent : RadzenComponentWithChildren
+    {
+        /// <summary>
+        /// Gets or sets the content justify.
+        /// </summary>
+        /// <value>The content justify.</value>
+        [Parameter]
+        public JustifyContent JustifyContent { get; set; } = JustifyContent.Normal;
+
+        /// <summary>
+        /// Gets or sets the items alignment.
+        /// </summary>
+        /// <value>The items alignment.</value>
+        [Parameter]
+        public AlignItems AlignItems { get; set; } = AlignItems.Normal;
+
+        internal string GetFlexCSSClass<T>(Enum v)
+        {
+            var value = ToDashCase(Enum.GetName(typeof(T), v));
+            return value == "start" || value == "end" ? $"flex-{value}" : value;
+        }
+
+        internal string ToDashCase(string value)
+        {
+            var sb = new StringBuilder();
+
+            foreach (var ch in value)
+            {
+                if ((char.IsUpper(ch) && sb.Length > 0) || char.IsSeparator(ch))
+                {
+                    sb.Append('-');
+                }
+
+                if (char.IsLetterOrDigit(ch))
+                {
+                    sb.Append(char.ToLowerInvariant(ch));
+                }
+            }
+
+            return sb.ToString();
+        }
     }
 
     class Debouncer
@@ -1951,5 +3739,54 @@ namespace Radzen
         {
             return String.Join("", BitConverter.GetBytes(x).Select(y => y.ToString("x2")));
         }
+    }
+
+    /// <summary>
+    /// CoordinateSystem enum
+    /// </summary>
+    public enum CoordinateSystem
+    {
+        /// <summary>
+        /// Cartesian CoordinateSystem
+        /// </summary>
+        Cartesian,
+        /// <summary>
+        /// Cartesian CoordinateSystem
+        /// </summary>
+        Polar
+    }
+
+    /// <summary>
+    /// Menu Item display style enum
+    /// </summary>
+    public enum MenuItemDisplayStyle
+    {
+        /// <summary>
+        /// Show text only
+        /// </summary>
+        Text,
+        /// <summary>
+        /// Show only icons
+        /// </summary>
+        Icon,
+        /// <summary>
+        /// Both icons and text are displayed
+        /// </summary>
+        IconAndText
+    }
+
+    /// <summary>
+    /// Frozen Column Position enum
+    /// </summary>
+    public enum FrozenColumnPosition
+    {
+        /// <summary>
+        /// Freeze column to the left
+        /// </summary>
+        Left,
+        /// <summary>
+        /// Freeze column to the right
+        /// </summary>
+        Right
     }
 }

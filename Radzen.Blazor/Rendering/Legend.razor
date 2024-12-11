@@ -2,7 +2,7 @@
 @if (Chart.Legend.Visible)
 {
     <div class="@Class">
-        <ul class="rz-legend-items">
+        <div class="rz-legend-items">
         @foreach (var series in Chart.Series)
         {
             @if (series.ShowInLegend)
@@ -10,7 +10,7 @@
                 @series.RenderLegendItem()
             }
         }
-        </ul>
+        </div>
     </div>
 }
 @code {
@@ -24,7 +24,7 @@
             var classList = new List<string>();
 
             classList.Add("rz-legend");
-            classList.Add($"rz-legend-{Chart.Legend.Position}".ToLower());
+            classList.Add($"rz-legend-{Chart.Legend.Position}".ToLowerInvariant());
 
             return String.Join(" ", classList);
         }

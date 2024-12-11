@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Components.Web;
 using System.Linq;
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Radzen.Blazor
 {
@@ -23,6 +24,41 @@ namespace Radzen.Blazor
     public partial class RadzenAutoComplete : DataBoundFormComponent<string>
     {
         /// <summary>
+        /// Specifies additional custom attributes that will be rendered by the input.
+        /// </summary>
+        /// <value>The attributes.</value>
+        [Parameter]
+        public IReadOnlyDictionary<string, object> InputAttributes { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="RadzenAutoComplete"/> is multiline.
+        /// </summary>
+        /// <value><c>true</c> if multiline; otherwise, <c>false</c>.</value>
+        [Parameter]
+        public bool Multiline { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether popup should open on focus. Set to <c>false</c> by default.
+        /// </summary>
+        /// <value><c>true</c> if popup should open on focus; otherwise, <c>false</c>.</value>
+        [Parameter]
+        public bool OpenOnFocus { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Popup height.
+        /// </summary>
+        /// <value>The number Popup height.</value>
+        [Parameter]
+        public string PopupStyle { get; set; } = "display:none; transform: none; box-sizing: border-box; max-height: 200px;";
+
+        /// <summary>
+        /// Gets or sets the template.
+        /// </summary>
+        /// <value>The template.</value>
+        [Parameter]
+        public RenderFragment<dynamic> Template { get; set; }
+
+        /// <summary>
         /// Gets or sets the minimum length.
         /// </summary>
         /// <value>The minimum length.</value>
@@ -35,6 +71,23 @@ namespace Radzen.Blazor
         /// <value>The filter delay.</value>
         [Parameter]
         public int FilterDelay { get; set; } = 500;
+
+        /// <summary>
+        /// Gets or sets the underlying input type.
+        /// </summary>
+        /// <remarks>
+        /// This does not apply when <see cref="Multiline"/> is <c>true</c>.
+        /// </remarks>
+        /// <value>The input type.</value>
+        [Parameter]
+        public string InputType { get; set; } = "text";
+
+        /// <summary>
+        /// Gets or sets the underlying max length.
+        /// </summary>
+        /// <value>The max length value.</value>
+        [Parameter]
+        public long? MaxLength { get; set; }
 
         /// <summary>
         /// Gets search input reference.
@@ -70,19 +123,24 @@ namespace Radzen.Blazor
                     //
                 }
             }
-            else if (key == "Enter")
+            else if (key == "Enter" || key == "Tab")
             {
                 if (selectedIndex >= 0 && selectedIndex <= items.Count() - 1)
                 {
                     await OnSelectItem(items.ElementAt(selectedIndex));
                     selectedIndex = -1;
                 }
+
+                if (key == "Tab")
+                {
+                    await JSRuntime.InvokeVoidAsync("Radzen.closePopup", PopupID);
+                }
             }
             else if (key == "Escape")
             {
                 await JSRuntime.InvokeVoidAsync("Radzen.closePopup", PopupID);
             }
-            else if(key != "Tab")
+            else
             {
                 selectedIndex = -1;
 
@@ -94,8 +152,13 @@ namespace Radzen.Blazor
         {
             var value = await JSRuntime.InvokeAsync<string>("Radzen.getInputValue", search);
 
+            value = $"{value}";
+
             if (value.Length < MinLength)
+            {
+                await JSRuntime.InvokeVoidAsync("Radzen.closePopup", PopupID);
                 return;
+            }
 
             if (!LoadData.HasDelegate)
             {
@@ -148,7 +211,9 @@ namespace Radzen.Blazor
                 {
                     string filterCaseSensitivityOperator = FilterCaseSensitivity == FilterCaseSensitivity.CaseInsensitive ? ".ToLower()" : "";
 
-                    return Query.Where($"{TextProperty}{filterCaseSensitivityOperator}.{Enum.GetName(typeof(StringFilterOperator), FilterOperator)}(@0)",
+                    string textProperty = string.IsNullOrEmpty(TextProperty) ? string.Empty : $".{TextProperty}";
+
+                    return Query.Where(DynamicLinqCustomTypeProvider.ParsingConfig, $"o=>o{textProperty}{filterCaseSensitivityOperator}.{Enum.GetName(typeof(StringFilterOperator), FilterOperator)}(@0)",
                         FilterCaseSensitivity == FilterCaseSensitivity.CaseInsensitive ? searchText.ToLower() : searchText);
                 }
 
@@ -203,7 +268,7 @@ namespace Radzen.Blazor
         /// <inheritdoc />
         protected override string GetComponentCssClass()
         {
-            return GetClassList("").ToString();
+            return GetClassList("rz-autocomplete").ToString();
         }
 
         /// <inheritdoc />
@@ -248,6 +313,14 @@ namespace Radzen.Blazor
             {
                 await JSRuntime.InvokeVoidAsync("Radzen.destroyPopup", PopupID);
             }
+        }
+
+        /// <summary>
+        /// Sets the focus on the input element.
+        /// </summary>
+        public override async ValueTask FocusAsync()
+        {
+            await search.FocusAsync();
         }
     }
 }

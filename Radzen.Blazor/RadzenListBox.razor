@@ -1,5 +1,4 @@
 ﻿@using Radzen
-@using System.Linq.Dynamic.Core
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Rendering
@@ -7,24 +6,33 @@
 @inherits DropDownBase<TValue>
 @if (Visible)
 {
-    <div @ref="@Element" style="@Style" @attributes="Attributes" class="@GetCssClass()" tabindex="@TabIndex" @onkeydown="@OnKeyDown" id="@GetId()">
+    <div @ref="@Element" style="@Style" @attributes="Attributes" class="@GetCssClass()" tabindex="@(Disabled ? "-1" : $"{TabIndex}")" @onkeydown="@OnKeyDown" id="@GetId()">
         <div class="rz-helper-hidden-accessible">
-            <input name="@Name" readonly="@ReadOnly" disabled="@Disabled" type="text" />
+            <input name="@Name" readonly="@ReadOnly" disabled="@Disabled" type="text" aria-label="@(!Multiple && internalValue != null ? internalValue : EmptyAriaLabel)" @attributes=@InputAttributes />
         </div>
-        @if (AllowFiltering || Multiple)
+        @if (View != null && (AllowFiltering || (Multiple && AllowSelectAll) || HeaderTemplate != null))
         {
+            @if (HeaderTemplate != null)
+            {
+                @HeaderTemplate
+            }
+            else
+            {
             <div class=" rz-listbox-header rz-helper-clearfix rz-listbox-header-w-checkbox">
                 @if (Multiple)
                 {
+                    @if (AllowSelectAll)
+                    {
                     <div class="rz-chkbox " @onclick="@SelectAll">
                         <div class="rz-helper-hidden-accessible">
-                            <input id="@($"{UniqueID}sa")" readonly="readonly" type="checkbox">
+                            <input id="@($"{UniqueID}sa")" readonly="readonly" type="checkbox" aria-label="@SelectAllText" aria-checked="@(IsAllSelected().ToString().ToLowerInvariant())">
                         </div>
-                        <div class="@(View != null && selectedItems.Count == View.Cast<object>().Count() ? "rz-chkbox-box rz-state-active" : "rz-chkbox-box")">
-                            <span class="@(View != null && selectedItems.Count == View.Cast<object>().Count() ? "rz-chkbox-icon rzi rzi-check" : "rz-chkbox-icon")"></span>
+                        <div class="@(IsAllSelected() ? "notranslate rz-chkbox-box rz-state-active" : "notranslate rz-chkbox-box")">
+                            <span class="@(IsAllSelected() ? "notranslate rz-chkbox-icon rzi rzi-check" : "notranslate rz-chkbox-icon")"></span>
                         </div>
                     </div>
-                    @if (!AllowFiltering && !string.IsNullOrEmpty(Placeholder))
+                    }
+                    @if (AllowSelectAll && !AllowFiltering && !string.IsNullOrEmpty(Placeholder))
                     {
                         <label for="@($"{UniqueID}sa")" class="rz-dropdown-label rz-inputtext" style="width:100%;">@Placeholder</label>
                     }
@@ -32,12 +40,12 @@
                 @if (AllowFiltering)
                 {
                     <div class="rz-listbox-filter-container">
-                        <input id="@SearchID" @ref="@search" disabled="@Disabled" class="rz-inputtext" role="textbox" type="text" placeholder="@Placeholder"
-                               @onchange="@((args) => OnFilter(args))" @onkeydown="@((args) => OnFilterKeyPress(args))" value="@searchText" @onkeydown:stopPropagation="true" />
-                        <span class="rz-listbox-filter-icon rzi rzi-search"></span>
+                        @RenderFilter()
+                        <span class="notranslate rz-listbox-filter-icon rzi rzi-search"></span>
                     </div>
                 }
             </div>
+            }
         }
         @if (View != null)
         {
@@ -48,4 +56,26 @@
             </div>
         }
     </div>
+}
+@code {
+    internal RenderFragment RenderFilter()
+    {
+#if NET7_0_OR_GREATER
+        return __builder => {
+            <text>
+                <input id="@SearchID" @ref="@search" disabled="@Disabled" class="rz-inputtext" role="textbox" type="text" placeholder="@Placeholder"
+                               @onchange="@OnFilter" @onkeydown="@OnFilterKeyPress" @onkeydown:stopPropagation="true"
+                               @bind:event="oninput" @bind:get="searchText" @bind:set=@(args => { searchText = $"{args}"; SearchTextChanged.InvokeAsync(searchText);}) aria-label="@SearchAriaLabel" />
+            </text>
+        };
+#else
+        return __builder => {
+            <text>
+                <input id="@SearchID" @ref="@search" disabled="@Disabled" class="rz-inputtext" role="textbox" type="text" placeholder="@Placeholder"
+                               @onchange="@OnFilter" @onkeydown="@OnFilterKeyPress" value="@searchText" @onkeydown:stopPropagation="true"
+                               @oninput=@((ChangeEventArgs args) => { searchText = $"{args.Value}"; SearchTextChanged.InvokeAsync(searchText);}) aria-label="@SearchAriaLabel" />
+            </text>
+        };
+#endif
+    }
 }

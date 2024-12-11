@@ -24,11 +24,14 @@ namespace Radzen.Blazor
     ///  {
     ///    public string Email { get; set; }
     ///  }
-    ///  
+    ///
     ///  Model model = new Model();
     /// }
     /// </code>
     /// </example>
+#if NET6_0_OR_GREATER
+    [CascadingTypeParameter(nameof(TItem))]
+#endif
     public class RadzenTemplateForm<TItem> : RadzenComponent, IRadzenForm
     {
         /// <summary>
@@ -74,12 +77,12 @@ namespace Radzen.Blazor
         ///   {
         ///    public string Email { get; set; }
         ///  }
-        ///  
+        ///
         ///  Model model = new Model();
         ///
         ///  void OnSubmit(Model value)
         ///  {
-        ///  
+        ///
         ///  }
         /// }
         /// </code>
@@ -118,12 +121,12 @@ namespace Radzen.Blazor
         ///  {
         ///    public string Email { get; set; }
         ///  }
-        ///  
+        ///
         ///  Model model = new Model();
         ///
         ///  void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
         ///  {
-        ///  
+        ///
         ///  }
         /// }
         /// </code>
@@ -201,7 +204,7 @@ namespace Radzen.Blazor
             }
         }
 
-        List<IRadzenFormComponent> components = new List<IRadzenFormComponent>();
+        readonly List<IRadzenFormComponent> components = new List<IRadzenFormComponent>();
 
         /// <inheritdoc />
         public void AddComponent(IRadzenFormComponent component)
@@ -228,6 +231,7 @@ namespace Radzen.Blazor
         /// Gets or sets the edit context.
         /// </summary>
         /// <value>The edit context.</value>
+        [Parameter]
         public EditContext EditContext { get; set; }
 
         /// <inheritdoc />
@@ -240,13 +244,19 @@ namespace Radzen.Blazor
         }
 
         /// <inheritdoc />
+        protected override string GetComponentCssClass()
+        {
+            return "rz-form";
+        }
+
+        /// <inheritdoc />
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
             if (Visible)
             {
-                if (Data != null)
+                if (EditContext != null)
                 {
-                    builder.OpenRegion(Data.GetHashCode());
+                    builder.OpenRegion(EditContext.GetHashCode());
                 }
 
                 builder.OpenElement(0, "form");
@@ -280,7 +290,7 @@ namespace Radzen.Blazor
 
                 builder.CloseElement(); // form
 
-                if (Data != null)
+                if (EditContext != null)
                 {
                     builder.CloseRegion();
                 }

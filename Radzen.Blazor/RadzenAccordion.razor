@@ -10,31 +10,37 @@
 }
 @if (Visible)
 {
-<div @ref="@Element" role="tablist" @attributes="Attributes" class="@GetCssClass()" id="@GetId()">
+<div @ref="@Element" role="tablist" style=@Style @attributes="Attributes" class="@GetCssClass()" id="@GetId()" 
+    tabindex="0" @onkeydown="@((args) => OnKeyPress(args))" @onkeydown:preventDefault=preventKeyPress @onkeydown:stopPropagation=preventKeyPress 
+    @onfocus=@(args => focusedIndex = focusedIndex == -1 ? 0: focusedIndex)>
     @for (var i = 0; i < items.Count; i++)
     {
-        var item = items[i];
+        var item = items[i];    
         if (!item.Visible)
             continue;
 
-        <div class="rz-accordion-header" @attributes="item.Attributes" style="@item.Style">
-            <a @onclick="@((args) => SelectItem(item))" href="javascript:void(0)" role="tab" tabindex="0"
+        <div @ref="@item.Element" id="@item.GetItemId()" @attributes="item.Attributes" class="@item.GetItemCssClass()" style="@item.Style" @onkeydown:stopPropagation>
+            <a @onclick="@((args) => SelectItem(item))" aria-label="@ItemAriaLabel(i, item)" title="@ItemTitle(i, item)" @onclick:preventDefault="true" role="tab" 
                id="@($"rz-accordiontab-{items.IndexOf(item)}")" aria-controls="@($"rz-accordiontab-{items.IndexOf(item)}-content")" aria-expanded="true">
                 @if (IsSelected(i, item))
                 {
-                    <span class="rz-accordion-toggle-icon rzi rzi-chevron-down"></span>
+                    <span class="notranslate rz-accordion-toggle-icon rzi rzi-chevron-down"></span>
                 }
                 else
                 {
-                    <span class="rz-accordion-toggle-icon rzi rzi-chevron-right"></span>
+                    <span class="notranslate rz-accordion-toggle-icon rzi rzi-chevron-right"></span>
                 }
                 @if (!string.IsNullOrEmpty(item.Icon))
                 {
-            <i class="rzi">@((MarkupString)item.Icon)</i>
+            <i class="notranslate rzi" style="@(!string.IsNullOrEmpty(item.IconColor) ? $"color:{item.IconColor}" : null)">@((MarkupString)item.Icon)</i>
                 }
-                @if (!string.IsNullOrEmpty(item.Text))
+                @if (item.Template != null)
                 {
-                    <span>@item.Text</span>
+                    @item.Template
+                }
+                else if(!string.IsNullOrEmpty(item.Text))
+                {
+                    <span>@((MarkupString)item.Text)</span>
                 }
             </a>
         </div>
@@ -42,7 +48,7 @@
         {
             <div class="rz-accordion-content-wrapper" role="tabpanel"
                  id="@($"rz-accordiontab-{items.IndexOf(item)}-content")" aria-hidden="false" aria-labelledby="@($"rz-accordiontab-{items.IndexOf(item)}")">
-                <div class="rz-accordion-content ">
+                <div class="rz-accordion-content" @onkeydown:stopPropagation>
                     @item.ChildContent
                 </div>
             </div>

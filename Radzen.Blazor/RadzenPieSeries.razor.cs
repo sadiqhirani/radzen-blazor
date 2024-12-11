@@ -3,6 +3,7 @@ using Radzen.Blazor.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Radzen.Blazor
 {
@@ -52,6 +53,20 @@ namespace Radzen.Blazor
         public double StrokeWidth { get; set; }
 
         /// <summary>
+        /// Gets or sets the start angle from which segments are rendered (clockwise). Set to <c>90</c> by default.
+        /// Top is <c>90</c>, right is <c>0</c>, bottom is <c>270</c>, left is <c>180</c>.
+        /// </summary>
+        [Parameter]
+        public double StartAngle { get; set; } = 90;
+
+        /// <summary>
+        /// Gets or sets the total angle of the pie in degrees. Set to <c>360</c> by default which renders a full circle.
+        /// Set to <c>180</c> to render a half circle or
+        /// </summary>
+        [Parameter]
+        public double TotalAngle { get; set; } = 360;
+
+        /// <summary>
         /// Returns the current radius - either a specified <see cref="Radius" /> or automatically calculated one.
         /// </summary>
         protected double CurrentRadius
@@ -65,7 +80,7 @@ namespace Radzen.Blazor
         /// <summary>
         /// Gets the current X coordinate of the center.
         /// </summary>
-        protected double CenterX
+        internal double CenterX
         {
             get
             {
@@ -76,7 +91,7 @@ namespace Radzen.Blazor
         /// <summary>
         /// Gets the current Y coordinate of the center.
         /// </summary>
-        protected double CenterY
+        internal double CenterY
         {
             get
             {
@@ -92,6 +107,12 @@ namespace Radzen.Blazor
             }
         }
 
+        /// <summary>
+        /// Stores Data filtered to items greater than zero as an IList of <typeparamref name="TItem"/>.
+        /// </summary>
+        /// <value>The items.</value>
+        protected IList<TItem> PositiveItems => Items != null ? Items.Where(e => Value(e) > 0).ToList() : new List<TItem>();
+
         /// <inheritdoc />
         public override double MeasureLegend()
         {
@@ -104,7 +125,7 @@ namespace Radzen.Blazor
         }
 
         /// <inheritdoc />
-        public override RenderFragment RenderLegendItem()
+        protected override RenderFragment RenderLegendItem(bool clickable)
         {
             return builder =>
             {
@@ -116,11 +137,27 @@ namespace Radzen.Blazor
                     builder.AddAttribute(3, nameof(LegendItem.MarkerSize), MarkerSize);
                     builder.AddAttribute(4, nameof(LegendItem.MarkerType), MarkerType);
                     builder.AddAttribute(5, nameof(LegendItem.Color), PickColor(Items.IndexOf(data), Fills));
+                    builder.AddAttribute(6, nameof(LegendItem.Click), EventCallback.Factory.Create(this, () => OnLegendClick(data)));
+                    builder.AddAttribute(7, nameof(LegendItem.Clickable), clickable);
                     builder.CloseComponent();
                 };
             };
         }
 
+        private async Task OnLegendClick(object data)
+        {
+            if (Chart.LegendClick.HasDelegate)
+            {
+                var args = new LegendClickEventArgs
+                {
+                    Data = data,
+                    Title = GetTitle(),
+                    IsVisible = true,
+                };
+
+                await Chart.LegendClick.InvokeAsync(args);
+            }
+        }
         /// <inheritdoc />
         public override bool Contains(double x, double y, double tolerance)
         {
@@ -135,33 +172,47 @@ namespace Radzen.Blazor
         }
 
         /// <inheritdoc />
-        public override object DataAt(double x, double y)
+        public override (object, Point) DataAt(double x, double y)
         {
-            var angle = 90 - Math.Atan((CenterY - y) / (x - CenterX)) * 180 / Math.PI;
-
-            if (x < CenterX)
+            if (!Contains(x, y, 0))
             {
-                angle += 180;
+                return (null, null);
             }
 
+            var angle = Math.Atan2(CenterY - y, x - CenterX) * 180 / Math.PI;
+
+            // Normalize the angle to be within [0, 360)
+            angle = (angle + 360) % 360;
+
             var sum = Items.Sum(Value);
-            double startAngle = 0;
+            var startAngle = StartAngle;
 
             foreach (var data in Items)
             {
                 var value = Value(data);
-                var endAngle = startAngle + (value / sum) * 360;
 
-                if (startAngle <= angle && angle <= endAngle)
+                if (value == 0)
                 {
-                    return data;
+                    continue;
+                }
+
+                var endAngle = startAngle - value / sum * TotalAngle; // assuming clockwise
+
+                // Normalize the endAngle
+                endAngle = (endAngle + 360) % 360;
+
+                if ((startAngle >= endAngle && angle <= startAngle && angle >= endAngle) ||
+                    (startAngle <= endAngle && (angle <= startAngle || angle >= endAngle)))
+                {
+                    return (data, new Point() { X = x, Y = y });
                 }
 
                 startAngle = endAngle;
             }
 
-            return null;
+            return (null, null);
         }
+
 
         /// <inheritdoc />
         protected override string TooltipClass(TItem item)
@@ -174,27 +225,34 @@ namespace Radzen.Blazor
         {
             var style = base.TooltipStyle(item);
 
-            var color = PickColor(Items.IndexOf(item), Fills);
+            var index = Items.IndexOf(item);
 
-            if (color != null)
+            if (index >= 0)
             {
-                style = $"{style}; border-color: {color};";
+                var color = PickColor(index, Fills);
+
+                if (color != null)
+                {
+                    style = $"{style}; border-color: {color};";
+                }
             }
 
             return style;
         }
 
-        /// <inheritdoc />
-        protected override double TooltipX(TItem item)
+        private double TooltipAngle(TItem item)
         {
-            var sum = Items.Sum(Value);
-            double startAngle = 0;
-            double endAngle = 0;
+            var items = PositiveItems;
+            var sum = items.Sum(Value);
+            var startAngle = StartAngle;
+            var endAngle = 0d;
 
-            foreach (var data in Items)
+            foreach (var data in items)
             {
                 var value = Value(data);
-                endAngle = startAngle + (value / sum) * 360;
+                var sweepAngle = value / sum * TotalAngle;
+
+                endAngle = startAngle - sweepAngle;
 
                 if (EqualityComparer<TItem>.Default.Equals(data, item))
                 {
@@ -204,34 +262,23 @@ namespace Radzen.Blazor
                 startAngle = endAngle;
             }
 
-            var angle = startAngle + (endAngle - startAngle) / 2;
-
-            return CenterX + CurrentRadius * Math.Cos(DegToRad(90 - angle));
+            return startAngle + (endAngle - startAngle) / 2;
         }
 
         /// <inheritdoc />
-        protected override double TooltipY(TItem item)
+        internal override double TooltipX(TItem item)
         {
-            var sum = Items.Sum(Value);
-            double startAngle = 0;
-            double endAngle = 0;
+            var angle = TooltipAngle(item);
 
-            foreach (var data in Items)
-            {
-                var value = Value(data);
-                endAngle = startAngle + (value / sum) * 360;
+            return CenterX + CurrentRadius * Math.Cos(DegToRad(angle));
+        }
 
-                if (EqualityComparer<TItem>.Default.Equals(data, item))
-                {
-                    break;
-                }
+        /// <inheritdoc />
+        internal override double TooltipY(TItem item)
+        {
+            var angle = TooltipAngle(item);
 
-                startAngle = endAngle;
-            }
-
-            var angle = startAngle + (endAngle - startAngle) / 2;
-
-            return CenterY - CurrentRadius * Math.Sin(DegToRad(90 - angle));
+            return CenterY - CurrentRadius * Math.Sin(DegToRad(angle));
         }
 
         /// <summary>
@@ -239,9 +286,7 @@ namespace Radzen.Blazor
         /// </summary>
         protected double DegToRad(double degrees)
         {
-            var radians = (degrees) * Math.PI / 180;
-
-            return radians;
+            return degrees * Math.PI / 180;
         }
 
         /// <summary>
@@ -253,9 +298,9 @@ namespace Radzen.Blazor
         /// <param name="degrees">The degrees.</param>
         protected (double X, double Y) ToCartesian(double x, double y, double radius, double degrees)
         {
-            var radians = (degrees) * Math.PI / 180;
+            var radians = DegToRad(degrees);
 
-            return (x + radius * Math.Cos(radians), y + radius * Math.Sin(radians));
+            return (x + radius * Math.Cos(radians), y - radius * Math.Sin(radians));
         }
 
         /// <summary>
@@ -269,13 +314,20 @@ namespace Radzen.Blazor
         /// <param name="endAngle">The end angle.</param>
         protected string Segment(double x, double y, double radius, double innerRadius, double startAngle, double endAngle)
         {
+            var largeArcFlag = 0;
+
+            if (Math.Abs(endAngle - startAngle) >= 180)
+            {
+                endAngle += 0.01;
+                largeArcFlag = 1;
+            }
+
             var start = ToCartesian(x, y, radius, startAngle);
             var end = ToCartesian(x, y, radius, endAngle);
 
             var innerStart = ToCartesian(x, y, innerRadius, startAngle);
             var innerEnd = ToCartesian(x, y, innerRadius, endAngle);
 
-            var largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
             var startX = start.X.ToInvariantString();
             var startY = start.Y.ToInvariantString();
             var endX = end.X.ToInvariantString();
@@ -285,16 +337,47 @@ namespace Radzen.Blazor
             var innerStartY = innerStart.Y.ToInvariantString();
             var innerEndX = innerEnd.X.ToInvariantString();
             var innerEndY = innerEnd.Y.ToInvariantString();
+            var innerR = innerRadius.ToInvariantString();
 
-            if (Math.Abs(end.X - start.X) < 0.01 && Math.Abs(end.Y - start.Y) < 0.01)
+            return $"M {startX} {startY} A {r} {r} 0 {largeArcFlag} 1 {endX} {endY} L {innerEndX} {innerEndY} A {innerR} {innerR} 0 {largeArcFlag} 0 {innerStartX} {innerStartY} Z";
+        }
+
+        /// <inheritdoc />
+        public override IEnumerable<ChartDataLabel> GetDataLabels(double offsetX, double offsetY)
+        {
+            var list = new List<ChartDataLabel>();
+
+            if(Data != null)
             {
-                // Full circle - SVG can't render a full circle arc 
-                endX = (end.X - 0.01).ToInvariantString();
+                foreach (var d in PositiveItems)
+                {
+                    var x = TooltipX(d) - CenterX;
+                    var y = TooltipY(d) - CenterY;
 
-                innerEndX = (innerEnd.X - 0.01).ToInvariantString();
+                    // find angle and add offset
+                    var phi = Math.Atan2(y, x);
+
+                    phi += Polar.ToRadian(offsetY % 360);
+
+                    var textAnchor = phi >= -1.5 && phi <= 1.5 ? "start" : "end";
+
+                    // find radius
+                    var hyp = Math.Sqrt(x * x + y * y) + offsetX + 16;
+
+                    // move along the radius and rotate
+                    x = CenterX + hyp * Math.Cos(phi);
+                    y = CenterY + hyp * Math.Sin(phi);
+
+                    list.Add(new ChartDataLabel
+                    {
+                        TextAnchor = textAnchor,
+                        Position = new Point { X = x, Y = y },
+                        Text = Chart.ValueAxis.Format(Chart.ValueScale, Value(d))
+                    });
+                }
             }
 
-            return $"M {startX} {startY} A {r} {r} 0 {largeArcFlag} 1 {endX} {endY} L {innerEndX} {innerEndY} A {innerRadius} {innerRadius} 0 {largeArcFlag} 0 {innerStartX} {innerStartY}";
+            return list;
         }
     }
 }

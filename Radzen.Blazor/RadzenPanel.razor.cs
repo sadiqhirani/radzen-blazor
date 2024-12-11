@@ -54,6 +54,13 @@ namespace Radzen.Blazor
         public string Icon { get; set; }
 
         /// <summary>
+        /// Gets or sets the icon color.
+        /// </summary>
+        /// <value>The icon color.</value>
+        [Parameter]
+        public string IconColor { get; set; }
+
+        /// <summary>
         /// Gets or sets the text.
         /// </summary>
         /// <value>The text.</value>
@@ -95,6 +102,34 @@ namespace Radzen.Blazor
         [Parameter]
         public EventCallback Collapse { get; set; }
 
+        /// <summary>
+        /// Gets or sets the title attribute of the expand button.
+        /// </summary>
+        /// <value>The title attribute value of the expand button.</value>
+        [Parameter]
+        public string ExpandTitle { get; set; } = "Expand";
+        
+        /// <summary>
+        /// Gets or sets the title attribute of the collapse button.
+        /// </summary>
+        /// <value>The title attribute value of the collapse button.</value>
+        [Parameter]
+        public string CollapseTitle { get; set; } = "Collapse";
+
+        /// <summary>
+        /// Gets or sets the aria-label attribute of the expand button.
+        /// </summary>
+        /// <value>The aria-label attribute value of the expand button.</value>
+        [Parameter]
+        public string ExpandAriaLabel { get; set; } = null;
+        
+        /// <summary>
+        /// Gets or sets the aria-label attribute of the collapse button.
+        /// </summary>
+        /// <value>The aria-label attribute value of the collapse button.</value>
+        [Parameter]
+        public string CollapseAriaLabel { get; set; } = null;
+        
         string contentStyle = "display: block;";
         string summaryContentStyle = "display: none";
 
@@ -119,6 +154,7 @@ namespace Radzen.Blazor
         /// <inheritdoc />
         protected override void OnInitialized()
         {
+            base.OnInitialized();
             collapsed = Collapsed;
         }
 
@@ -143,6 +179,23 @@ namespace Radzen.Blazor
             summaryContentStyle = !collapsed ? "display: none" : "display: block";
 
             return base.OnParametersSetAsync();
+        }
+
+        bool preventKeyPress = false;
+        async Task OnKeyPress(KeyboardEventArgs args, Task task)
+        {
+            var key = args.Code != null ? args.Code : args.Key;
+
+            if (key == "Space" || key == "Enter")
+            {
+                preventKeyPress = true;
+
+                await task;
+            }
+            else
+            {
+                preventKeyPress = false;
+            }
         }
     }
 }

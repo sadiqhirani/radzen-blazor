@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
+using System.Globalization;
 
 namespace Radzen
 {
@@ -211,7 +212,7 @@ namespace Radzen
         /// <param name="options">The options.</param>
         public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"));
+            writer.WriteStringValue(value.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture));
         }
     }
 
@@ -230,9 +231,10 @@ namespace Radzen
         /// <param name="orderby">The orderby.</param>
         /// <param name="expand">The expand.</param>
         /// <param name="select">The select.</param>
+        /// <param name="apply">The apply.</param>
         /// <param name="count">if set to <c>true</c> [count].</param>
         /// <returns>Uri.</returns>
-        public static Uri GetODataUri(this Uri uri, string filter = null, int? top = null, int? skip = null, string orderby = null, string expand = null, string select = null, bool? count = null)
+        public static Uri GetODataUri(this Uri uri, string filter = null, int? top = null, int? skip = null, string orderby = null, string expand = null, string select = null, string apply = null, bool? count = null)
         {
             var uriBuilder = new UriBuilder(uri);
             var queryString = HttpUtility.ParseQueryString(uriBuilder.Query);
@@ -265,6 +267,11 @@ namespace Radzen
             if (!string.IsNullOrEmpty(select))
             {
                 queryString["$select"] = $"{select}";
+            }
+
+            if (!string.IsNullOrEmpty(apply))
+            {
+                queryString["$apply"] = $"{apply}";
             }
 
             if (count != null)

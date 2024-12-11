@@ -1,14 +1,80 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
+using Radzen.Blazor;
 using Radzen.Blazor.Rendering;
 
 namespace Radzen
 {
+    /// <summary>
+    /// Class FormComponentWithAutoComplete.
+    /// </summary>
+    public class FormComponentWithAutoComplete<T> : FormComponent<T>
+    {
+        /// <summary>
+        /// Gets or sets a value indicating the type of built-in autocomplete
+        /// the browser should use.
+        /// <see cref="Blazor.AutoCompleteType" />
+        /// </summary>
+        /// <value>
+        /// The type of built-in autocomplete.
+        /// </value>
+        [Parameter]
+        public virtual AutoCompleteType AutoCompleteType { get; set; } = AutoCompleteType.On;
+
+        /// <summary>
+        /// Gets the autocomplete attribute's string value.
+        /// </summary>
+        /// <value>
+        /// <c>off</c> if the AutoComplete parameter is false or the
+        /// AutoCompleteType parameter is "off". When the AutoComplete
+        /// parameter is true, the value is <c>on</c> or, if set, the value of
+        /// AutoCompleteType.</value>
+        public virtual string AutoCompleteAttribute
+        {
+            get => Attributes != null && Attributes.ContainsKey("AutoComplete") && $"{Attributes["AutoComplete"]}".ToLower() == "false" ? DefaultAutoCompleteAttribute :
+                Attributes != null && Attributes.ContainsKey("AutoComplete") ? Attributes["AutoComplete"] as string ?? AutoCompleteType.GetAutoCompleteValue() : AutoCompleteType.GetAutoCompleteValue();
+        }
+
+        /// <summary>
+        /// Gets or sets the default autocomplete attribute's string value.
+        /// </summary>
+        public virtual string DefaultAutoCompleteAttribute { get; set; } = "off";
+
+        object ariaAutoComplete;
+
+        /// <inheritdoc />
+        public override async Task SetParametersAsync(ParameterView parameters)
+        {
+            parameters = parameters.TryGetValue("aria-autocomplete", out ariaAutoComplete) ?
+                ParameterView.FromDictionary(parameters
+                    .ToDictionary().Where(i => i.Key != "aria-autocomplete").ToDictionary(i => i.Key, i => i.Value)
+                    .ToDictionary(i => i.Key, i => i.Value))
+                : parameters;
+
+            await base.SetParametersAsync(parameters);
+        }
+
+        /// <summary>
+        /// Gets or sets the default aria-autocomplete attribute's string value.
+        /// </summary>
+        public virtual string DefaultAriaAutoCompleteAttribute { get; set; } = "none";
+
+        /// <summary>
+        /// Gets the aria-autocomplete attribute's string value.
+        /// </summary>
+        public virtual string AriaAutoCompleteAttribute
+        {
+            get => AutoCompleteAttribute == DefaultAutoCompleteAttribute ? DefaultAriaAutoCompleteAttribute : ariaAutoComplete as string;
+        }
+
+    }
+
     /// <summary>
     /// Class FormComponent.
     /// Implements the <see cref="Radzen.RadzenComponent" />
@@ -72,11 +138,8 @@ namespace Radzen
             }
             set
             {
-                if (_form != value && value != null)
-                {
-                    _form = value;
-                    _form.AddComponent(this);
-                }
+                _form = value;
+                _form?.AddComponent(this);
             }
         }
 
@@ -165,12 +228,20 @@ namespace Radzen
         /// <returns>Task.</returns>
         public override Task SetParametersAsync(ParameterView parameters)
         {
+            var disabledChanged = parameters.DidParameterChange(nameof(Disabled), Disabled);
+
             var result = base.SetParametersAsync(parameters);
 
             if (EditContext != null && ValueExpression != null && FieldIdentifier.Model != EditContext.Model)
             {
                 FieldIdentifier = FieldIdentifier.Create(ValueExpression);
+                EditContext.OnValidationStateChanged -= ValidationStateChanged;
                 EditContext.OnValidationStateChanged += ValidationStateChanged;
+            }
+
+            if (disabledChanged)
+            {
+                FormFieldContext?.DisabledChanged(Disabled);
             }
 
             return result;
@@ -232,6 +303,20 @@ namespace Radzen
         /// <returns>ClassList.</returns>
         protected ClassList GetClassList(string className) => ClassList.Create(className)
                                                                        .AddDisabled(Disabled)
-                                                                       .Add(FieldIdentifier, EditContext);
+                                                                       .Add(FieldIdentifier, EditContext)
+                                                                       .Add("rz-state-empty", !HasValue);
+
+        /// <summary> Provides support for RadzenFormField integration. </summary>
+        [CascadingParameter]
+        public IFormFieldContext FormFieldContext { get; set; }
+
+        /// <summary> Gets the current placeholder. Returns empty string if this component is inside a RadzenFormField.</summary>
+        protected string CurrentPlaceholder => FormFieldContext?.AllowFloatingLabel == true ? " " : Placeholder;
+
+        /// <inheritdoc/>
+        public virtual async ValueTask FocusAsync()
+        {
+            await Element.FocusAsync();
+        }
     }
 }

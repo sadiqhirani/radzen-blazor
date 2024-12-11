@@ -41,7 +41,7 @@ namespace Radzen.Blazor.Tests
 
             component.SetParametersAndRender(parameters => parameters.Add(p => p.Style, value));
 
-            Assert.Contains(@$"style=""outline: 0 none;{value}""", component.Markup);
+            Assert.Contains(@$"style=""{value}""", component.Markup);
         }
 
         [Fact]
@@ -110,7 +110,7 @@ namespace Radzen.Blazor.Tests
 
             component.SetParametersAndRender(parameters => parameters.Add(p => p.Change, args => { raised = true; newValue = args; }));
 
-            component.Find("div").MouseUp();
+            component.Find("div").Click();
 
             Assert.True(raised);
             Assert.True(object.Equals(value, !(bool)newValue));
@@ -129,7 +129,7 @@ namespace Radzen.Blazor.Tests
 
             component.SetParametersAndRender(parameters => parameters.Add(p => p.ValueChanged, args => { raised = true; newValue = args; }));
 
-            component.Find("div").MouseUp();
+            component.Find("div").Click();
 
             Assert.True(raised);
             Assert.True(object.Equals(value, !(bool)newValue));

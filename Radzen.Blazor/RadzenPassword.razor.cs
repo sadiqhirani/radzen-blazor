@@ -10,7 +10,7 @@ namespace Radzen.Blazor
     /// &lt;RadzenPassword Placeholder="Enter password..." Change=@(args => Console.WriteLine($"Value: {args}")) /&gt;
     /// </code>
     /// </example>
-    public partial class RadzenPassword : FormComponent<string>, IRadzenFormComponent
+    public partial class RadzenPassword : FormComponentWithAutoComplete<string>, IRadzenFormComponent
     {
         /// <summary>
         /// Gets or sets a value indicating whether is read only.
@@ -18,13 +18,6 @@ namespace Radzen.Blazor
         /// <value><c>true</c> if is read only; otherwise, <c>false</c>.</value>
         [Parameter]
         public bool ReadOnly { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether input automatic complete is allowed.
-        /// </summary>
-        /// <value><c>true</c> if input automatic complete is allowed; otherwise, <c>false</c>.</value>
-        [Parameter]
-        public bool AutoComplete { get; set; } = true;
 
         /// <summary>
         /// Handles the <see cref="E:Change" /> event.
@@ -43,6 +36,15 @@ namespace Radzen.Blazor
         protected override string GetComponentCssClass()
         {
             return GetClassList("rz-textbox").ToString();
+        }
+
+        /// <inheritdoc />
+        public override string DefaultAutoCompleteAttribute { get; set; } = "new-password";
+
+        /// <inheritdoc />
+        protected override string GetId()
+        {
+            return Name ?? base.GetId();
         }
     }
 }

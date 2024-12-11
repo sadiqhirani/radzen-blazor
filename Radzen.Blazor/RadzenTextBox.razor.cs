@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 
 namespace Radzen.Blazor
@@ -11,7 +12,7 @@ namespace Radzen.Blazor
     /// &lt;RadzenTextBox @bind-Value=@value Change=@(args => Console.WriteLine($"Value: {args}")) /&gt;
     /// </code>
     /// </example>
-    public partial class RadzenTextBox : FormComponent<string>
+    public partial class RadzenTextBox : FormComponentWithAutoComplete<string>
     {
         /// <summary>
         /// Gets or sets a value indicating whether is read only.
@@ -19,13 +20,6 @@ namespace Radzen.Blazor
         /// <value><c>true</c> if is read only; otherwise, <c>false</c>.</value>
         [Parameter]
         public bool ReadOnly { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating the browser built-in autocomplete is enabled.
-        /// </summary>
-        /// <value><c>true</c> if input automatic complete is enabled; otherwise, <c>false</c>.</value>
-        [Parameter]
-        public bool AutoComplete { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the maximum allowed text length.
@@ -67,6 +61,12 @@ namespace Radzen.Blazor
         protected override string GetComponentCssClass()
         {
             return GetClassList("rz-textbox").ToString();
+        }
+
+        /// <inheritdoc />
+        protected override string GetId()
+        {
+            return Name ?? base.GetId();
         }
     }
 }

@@ -63,6 +63,16 @@ namespace Radzen.Blazor
         /// <value>The template.</value>
         [Parameter]
         public RenderFragment<TItem> Template { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the additional content to be rendered in place of the default navigation buttons in the scheduler.
+        /// This property allows for complete customization of the navigation controls, replacing the native date navigation buttons (such as year, month, and day) with user-defined content or buttons.
+        /// Use this to add custom controls or interactive elements that better suit your application's requirements.
+        /// </summary>
+        /// <value>The custom navigation template to replace default navigation buttons.</value>
+        [Parameter]
+        public RenderFragment NavigationTemplate { get; set; }
+
 
         /// <summary>
         /// Gets or sets the data of RadzenScheduler. It will display an appointment for every item of the collection which is within the current view date range.
@@ -102,6 +112,20 @@ namespace Radzen.Blazor
         public string TodayText { get; set; } = "Today";
 
         /// <summary>
+        /// Gets or sets the text of the next button. Set to <c>Next</c> by default.
+        /// </summary>
+        /// <value>The next text.</value>
+        [Parameter]
+        public string NextText { get; set; } = "Next";
+
+        /// <summary>
+        /// Gets or sets the text of the previous button. Set to <c>Previous</c> by default.
+        /// </summary>
+        /// <value>The previous text.</value>
+        [Parameter]
+        public string PrevText { get; set; } = "Previous";
+
+        /// <summary>
         /// Gets or sets the initial date displayed by the selected view. Set to <c>DateTime.Today</c> by default.
         /// </summary>
         /// <value>The date.</value>
@@ -129,7 +153,7 @@ namespace Radzen.Blazor
         /// &lt;RadzenScheduler Data=@appointments SlotSelect=@OnSlotSelect&gt;
         /// &lt;/RadzenScheduler&gt;
         /// @code {
-        ///  void OnSlotSelect(SchedulerSlotSelectEventArgs args) 
+        ///  void OnSlotSelect(SchedulerSlotSelectEventArgs args)
         ///  {
         ///  }
         /// }
@@ -139,6 +163,42 @@ namespace Radzen.Blazor
         public EventCallback<SchedulerSlotSelectEventArgs> SlotSelect { get; set; }
 
         /// <summary>
+        /// A callback that will be invoked when the user clicks the Today button.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// &lt;RadzenScheduler Data=@appointments TodaySelect=@OnTodaySelect&gt;
+        /// &lt;/RadzenScheduler&gt;
+        /// @code {
+        /// void OnTodaySelect(SchedulerTodaySelectEventArgs args)
+        /// {
+        ///     args.Today = DateTime.Today.AddDays(1);
+        /// }
+        /// }
+        /// </code>
+        /// </example>
+        [Parameter]
+        public EventCallback<SchedulerTodaySelectEventArgs> TodaySelect { get; set; }
+
+        /// <summary>
+        /// A callback that will be invoked when the user clicks a month header button.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// &lt;RadzenScheduler Data=@appointments MonthSelect=@OnMonthSelect&gt;
+        /// &lt;/RadzenScheduler&gt;
+        /// @code {
+        /// void OnMonthSelect(SchedulerTodaySelectEventArgs args)
+        /// {
+        ///     args.Month = DateTime.Month.AddMonth(1);
+        /// }
+        /// }
+        /// </code>
+        /// </example>
+        [Parameter]
+        public EventCallback<SchedulerMonthSelectEventArgs> MonthSelect { get; set; }
+
+        /// <summary>
         /// A callback that will be invoked when the user clicks an appointment in the current view. Commonly used to edit existing appointments.
         /// </summary>
         /// <example>
@@ -146,7 +206,7 @@ namespace Radzen.Blazor
         /// &lt;RadzenScheduler Data=@appointments AppointmentSelect=@OnAppointmentSelect&gt;
         /// &lt;/RadzenScheduler&gt;
         /// @code {
-        ///  void OnAppointmentSelect(SchedulerAppointmentSelectEventArgs&lt;TItem&gt; args) 
+        ///  void OnAppointmentSelect(SchedulerAppointmentSelectEventArgs&lt;TItem&gt; args)
         ///  {
         ///  }
         /// }
@@ -156,6 +216,37 @@ namespace Radzen.Blazor
         public EventCallback<SchedulerAppointmentSelectEventArgs<TItem>> AppointmentSelect { get; set; }
 
         /// <summary>
+        /// A callback that will be invoked when the user moves the mouse over an appointment in the current view.
+        /// </summary>
+        [Parameter]
+        public EventCallback<SchedulerAppointmentMouseEventArgs<TItem>> AppointmentMouseEnter { get; set; }
+
+        /// <summary>
+        /// A callback that will be invoked when the user moves the mouse out of an appointment in the current view.
+        /// </summary>
+        [Parameter]
+        public EventCallback<SchedulerAppointmentMouseEventArgs<TItem>> AppointmentMouseLeave { get; set; }
+
+        /// <summary>
+        /// A callback that will be invoked when the user clicks the more text in the current view. Commonly used to view additional appointments.
+        /// Invoke the <see cref="SchedulerMoreSelectEventArgs.PreventDefault"/> method to prevent the default action (showing the additional appointments).
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// &lt;RadzenScheduler Data=@appointments MoreSelect=@OnMoreSelect&gt;
+        /// &lt;/RadzenScheduler&gt;
+        /// @code {
+        ///  void OnMoreSelect(SchedulerMoreSelectEventArgs args)
+        ///  {
+        ///     args.PreventDefault();
+        ///  }
+        /// }
+        /// </code>
+        /// </example>
+        [Parameter]
+        public EventCallback<SchedulerMoreSelectEventArgs> MoreSelect { get; set; }
+
+        /// <summary>
         /// An action that will be invoked when the current view renders an appointment. Never call <c>StateHasChanged</c> when handling AppointmentRender.
         /// </summary>
         /// <example>
@@ -163,7 +254,7 @@ namespace Radzen.Blazor
         /// &lt;RadzenScheduler Data=@appointments AppointmentRender=@OnAppointmentRendert&gt;
         /// &lt;/RadzenScheduler&gt;
         /// @code {
-        ///   void OnAppintmentRender(SchedulerAppointmentRenderEventArgs&lt;TItem&gt; args) 
+        ///   void OnAppintmentRender(SchedulerAppointmentRenderEventArgs&lt;TItem&gt; args)
         ///   {
         ///     if (args.Data.Text == "Birthday")
         ///     {
@@ -184,7 +275,7 @@ namespace Radzen.Blazor
         /// &lt;RadzenScheduler Data=@appointments SlotRender=@OnSlotRender&gt;
         /// &lt;/RadzenScheduler&gt;
         /// @code {
-        ///   void OnSlotRender(SchedulerSlotRenderEventArgs args) 
+        ///   void OnSlotRender(SchedulerSlotRenderEventArgs args)
         ///   {
         ///     if (args.View.Text == "Month" &amp;&amp; args.Start.Date == DateTime.Today)
         ///     {
@@ -204,9 +295,38 @@ namespace Radzen.Blazor
         [Parameter]
         public EventCallback<SchedulerLoadDataEventArgs> LoadData { get; set; }
 
+        /// <summary>
+        /// A callback that will be invoked when an appointment is being dragged and then dropped on a different slot.
+        /// Commonly used to change it to a different timeslot.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// &lt;RadzenScheduler Data=@appointments AppointmentMove=@OnAppointmentMove&gt;
+        /// &lt;/RadzenScheduler&gt;
+        /// @code {
+        ///   async Task OnAppointmentMove(SchedulerAppointmentMoveEventArgs moved)
+        ///   {
+        ///     var draggedAppointment = appointments.SingleOrDefault(x => x == (Appointment)moved.Appointment.Data);
+        ///     if (draggedAppointment != null)
+        ///     {
+        ///         draggedAppointment.Start = draggedAppointment.Start + moved.TimeSpan;
+        ///         draggedAppointment.End = draggedAppointment.End + moved.TimeSpan;
+        ///         await scheduler.Reload();
+        ///     }
+        ///   }
+        /// }
+        /// </code>
+        /// </example>
+        /// <value></value>
+        [Parameter]
+        public EventCallback<SchedulerAppointmentMoveEventArgs> AppointmentMove { get; set; }
+
         IList<ISchedulerView> Views { get; set; } = new List<ISchedulerView>();
 
-        ISchedulerView SelectedView
+        /// <summary>
+        /// Gets the SelectedView.
+        /// </summary>
+        public ISchedulerView SelectedView
         {
             get
             {
@@ -249,7 +369,31 @@ namespace Radzen.Blazor
         /// <inheritdoc />
         public async Task SelectSlot(DateTime start, DateTime end)
         {
-            await SlotSelect.InvokeAsync(new SchedulerSlotSelectEventArgs { Start = start, End = end });
+            await SlotSelect.InvokeAsync(new SchedulerSlotSelectEventArgs { Start = start, End = end, Appointments = Array.Empty<AppointmentData>(), View = SelectedView });
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> SelectSlot(DateTime start, DateTime end, IEnumerable<AppointmentData> appointments)
+        {
+            var args = new SchedulerSlotSelectEventArgs { Start = start, End = end, Appointments = appointments, View = SelectedView };
+            await SlotSelect.InvokeAsync(args);
+
+            return args.IsDefaultPrevented;
+        }
+
+        /// <inheritdoc />
+        public async Task SelectMonth(DateTime monthStart, IEnumerable<AppointmentData> appointments)
+        {
+            await MonthSelect.InvokeAsync(new SchedulerMonthSelectEventArgs { MonthStart = monthStart, Appointments = appointments, View = SelectedView });
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> SelectMore(DateTime start, DateTime end, IEnumerable<AppointmentData> appointments)
+        {
+            var args = new SchedulerMoreSelectEventArgs { Start = start, End = end, Appointments = appointments, View = SelectedView };
+            await MoreSelect.InvokeAsync(args);
+
+            return args.IsDefaultPrevented;
         }
 
         /// <inheritdoc />
@@ -272,6 +416,27 @@ namespace Radzen.Blazor
 
                 StateHasChanged();
             }
+        }
+
+        /// <summary>
+        /// Selects the specified <see cref="ISchedulerView"/>. The view must already be present in this scheduler.
+        /// If the specified view is already selected, no action will be performed.
+        /// </summary>
+        /// <param name="view">The <see cref="ISchedulerView"/> to select</param>
+        public async Task SelectView(ISchedulerView view)
+        {
+            var viewIndex = Views.IndexOf(view);
+            if (viewIndex == -1)
+                return;
+
+            if (SelectedView == view)
+                return;
+
+            selectedIndex = viewIndex;
+
+            await InvokeLoadData();
+
+            StateHasChanged();
         }
 
         /// <summary>
@@ -309,7 +474,11 @@ namespace Radzen.Blazor
 
         async Task OnToday()
         {
-            CurrentDate = DateTime.Now.Date;
+            var args = new SchedulerTodaySelectEventArgs { Today = DateTime.Now.Date };
+
+            await TodaySelect.InvokeAsync(args);
+
+            CurrentDate = args.Today;
 
             await InvokeLoadData();
         }
@@ -445,7 +614,7 @@ namespace Radzen.Blazor
             var predicate = $"{EndProperty} >= @0 && {StartProperty} < @1";
 
             appointments = Data.AsQueryable()
-                               .Where(predicate, start, end)
+                               .Where(DynamicLinqCustomTypeProvider.ParsingConfig, predicate, start, end)
                                .ToList()
                                .Select(item => new AppointmentData { Start = startGetter(item), End = endGetter(item), Text = textGetter(item), Data = item });
 
@@ -521,6 +690,26 @@ namespace Radzen.Blazor
         protected override string GetComponentCssClass()
         {
             return $"rz-scheduler";
+        }
+
+        async Task IScheduler.MouseEnterAppointment(ElementReference reference, AppointmentData data)
+        {
+            await AppointmentMouseEnter.InvokeAsync(new SchedulerAppointmentMouseEventArgs<TItem> { Element = reference, Data = (TItem)data.Data });
+        }
+
+        async Task IScheduler.MouseLeaveAppointment(ElementReference reference, AppointmentData data)
+        {
+            await AppointmentMouseLeave.InvokeAsync(new SchedulerAppointmentMouseEventArgs<TItem> { Element = reference, Data = (TItem)data.Data });
+        }
+
+        bool IScheduler.HasMouseEnterAppointmentDelegate()
+        {
+            return AppointmentMouseEnter.HasDelegate;
+        }
+
+        bool IScheduler.HasAppointmentMoveDelegate()
+        {
+            return AppointmentMove.HasDelegate;
         }
     }
 }

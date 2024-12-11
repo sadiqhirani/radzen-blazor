@@ -67,7 +67,13 @@ namespace Radzen.Blazor
         /// <value>The ticks.</value>
         public RadzenTicks Ticks { get; set; } = new RadzenTicks();
 
-        internal int TickDistance { get; set; } = 100;
+        /// <summary>
+        /// Gets or sets the pixel distance between axis ticks. It is used to calculate the number of visible ticks depending on the available space. Set to 100 by default;
+        /// Setting <see cref="Step" /> will override this value.
+        /// </summary>
+        /// <value>The desired pixel distance between ticks.</value>
+        [Parameter]
+        public int TickDistance { get; set; } = 100;
 
         /// <summary>
         /// Specifies the minimum value of the axis.
@@ -95,6 +101,17 @@ namespace Radzen.Blazor
         /// <value><c>true</c> if visible; otherwise, <c>false</c>.</value>
         [Parameter]
         public bool Visible { get; set; } = true;
+    /// <summary>
+        /// Specifies the label rotation angle in degrees. Set to <c>null</c> by default which means no rotation is applied. Has higher precedence than <see cref="LabelAutoRotation"/>.
+        /// </summary>
+        [Parameter]
+        public double? LabelRotation { get; set; } = null;
+
+        /// <summary>
+        /// Specifies the automatic label rotation angle in degrees. If set RadzenChart will automatically rotate the labels to fit the available space by the specified value. Has lower precedence than <see cref="LabelRotation"/>.
+        /// </summary>
+        [Parameter]
+        public double? LabelAutoRotation { get; set; } = null;
 
         /// <inheritdoc />
         protected override bool ShouldRefreshChart(ParameterView parameters)
@@ -102,6 +119,8 @@ namespace Radzen.Blazor
             return DidParameterChange(parameters, nameof(Min), Min) ||
                    DidParameterChange(parameters, nameof(Max), Max) ||
                    DidParameterChange(parameters, nameof(Visible), Visible) ||
+                   DidParameterChange(parameters, nameof(LabelRotation), LabelRotation) ||
+                   DidParameterChange(parameters, nameof(LabelAutoRotation), LabelAutoRotation) ||
                    DidParameterChange(parameters, nameof(Step), Step);
         }
 

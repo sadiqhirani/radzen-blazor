@@ -1,47 +1,72 @@
 ﻿@page "/panelmenu"
+@page "/docs/guides/components/panelmenu.html"
 
-<RadzenExample Name="PanelMenu">
-<RadzenCard Style="width: fit-content" Class="mx-auto">
-    <RadzenPanelMenu Style="width:300px">
-            <RadzenPanelMenuItem Text="General" Icon="home">
-                <RadzenPanelMenuItem Text="Buttons" Path="buttons" Icon="account_circle"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Menu" Path="menu" Icon="line_weight"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="FileInput" Path="fileinput" Icon="attach_file"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Dialog" Path="dialog" Icon="perm_media"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Notification" Path="notification" Icon="announcement"></RadzenPanelMenuItem>
-            </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Inputs" Icon="payment">
-                <RadzenPanelMenuItem Text="CheckBox" Path="checkbox" Icon="check_circle"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="TextBox" Path="textbox" Icon="input"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="TextArea" Path="textarea" Icon="description"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Password" Path="password" Icon="payment"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Numeric" Path="numeric" Icon="aspect_ratio"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="DatePicker" Path="datepicker" Icon="date_range"></RadzenPanelMenuItem>
-            </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Data" Icon="save">
-                <RadzenPanelMenuItem Text="DataGrid" Path="datagrid" Icon="grid_on"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="DataList" Path="datalist" Icon="list"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="DropDown" Path="dropdown" Icon="dns"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="DropDownDataGrid" Path="dropdown-datagrid" Icon="receipt"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="ListBox" Path="listbox" Icon="view_list"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="TemplateForm" Path="templateform" Icon="line_style"></RadzenPanelMenuItem>
-            </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="Containers" Icon="account_box">
-                <RadzenPanelMenuItem Text="Tabs" Path="tabs" Icon="tab"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Panel" Path="panel" Icon="content_paste"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Fieldset" Path="fieldset" Icon="account_balance_wallet"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Card" Path="card" Icon="line_style"></RadzenPanelMenuItem>
-            </RadzenPanelMenuItem>
-            <RadzenPanelMenuItem Text="More">
-                <RadzenPanelMenuItem Text="Item1"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="Item2"></RadzenPanelMenuItem>
-                <RadzenPanelMenuItem Text="More items">
-                    <RadzenPanelMenuItem Text="More sub items">
-                        <RadzenPanelMenuItem Text="Item1"></RadzenPanelMenuItem>
-                        <RadzenPanelMenuItem Text="Item2"></RadzenPanelMenuItem>
-                    </RadzenPanelMenuItem>
-                </RadzenPanelMenuItem>
-            </RadzenPanelMenuItem>
-    </RadzenPanelMenu>
-</RadzenCard>
+<RadzenText TextStyle="TextStyle.H2" TagName="TagName.H1" class="rz-pt-8">
+    PanelMenu
+</RadzenText>
+<RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.P" class="rz-pb-4">
+    Demonstration and configuration of the Radzen Blazor <strong>PanelMenu</strong> component.
+</RadzenText>
+
+<RadzenText Anchor="panelmenu#panelmenu-static" TextStyle="TextStyle.H5" TagName="TagName.H2" class="rz-pt-8 rz-mb-6">
+    Statically declared items
+</RadzenText>
+<RadzenExample ComponentName="PanelMenu" Example="PanelMenuStatic">
+     <PanelMenuStatic />
 </RadzenExample>
+
+<RadzenText Anchor="panelmenu#panelmenu-programmatic" TextStyle="TextStyle.H5" TagName="TagName.H2" class="rz-pt-12 rz-mb-6">
+    Programmatically created items with Expanded binding
+</RadzenText>
+<RadzenExample ComponentName="PanelMenu" Example="PanelMenuProgrammatic">
+     <PanelMenuProgrammatic />
+</RadzenExample>
+
+<RadzenText Anchor="panelmenu#panelmenu-display-style" TextStyle="TextStyle.H5" TagName="TagName.H2" class="rz-pt-12 rz-mb-6">
+    Set the display style of menu items
+</RadzenText>
+<RadzenExample ComponentName="PanelMenu" Example="PanelMenuDisplayStyle">
+    <PanelMenuDisplayStyle />
+</RadzenExample>
+
+<RadzenText Anchor="panelmenu#keyboard-navigation" TextStyle="TextStyle.H5" TagName="TagName.H2" class="rz-pt-12">
+    Keyboard Navigation
+</RadzenText>
+<RadzenText TextStyle="TextStyle.Body1" class="rz-mb-8">
+    The following keys or key combinations provide a way for users to navigate and interact with Radzen Blazor PanelMenu component.
+</RadzenText>
+
+<div class="rz-data-grid rz-datatable rz-datatable-scrollable" style="width: 100%;">
+    <div class="rz-data-grid-data">
+        <table class="rz-grid-table">
+            <thead>
+                <tr>
+                    <th style="padding: var(--rz-grid-cell-padding)">Press this key</th>
+                    <th style="padding: var(--rz-grid-cell-padding)">To do this</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="rz-cell-data"><RadzenBadge Text="Tab" /></span></td>
+                    <td><span class="rz-cell-data">Navigate to a PanelMenu.</span></td>
+                </tr>
+                <tr>
+                    <td><span class="rz-cell-data"><RadzenBadge Text="Down Arrow" /></span></td>
+                    <td><span class="rz-cell-data">Focus next PanelMenu item.</span></td>
+                </tr>
+                <tr>
+                    <td><span class="rz-cell-data"><RadzenBadge Text="Up Arrow" /></span></td>
+                    <td><span class="rz-cell-data">Focus previous PanelMenu item.</span></td>
+                </tr>
+                <tr>
+                    <td><span class="rz-cell-data"><RadzenBadge Text="Space" /> or <RadzenBadge Text="Enter" /> on an expandable item</span></td>
+                    <td><span class="rz-cell-data">Change the state of a focused PanelMenu item switching between expanded and collapsed.</span></td>
+                </tr>
+                <tr>
+                    <td><span class="rz-cell-data"><RadzenBadge Text="Space" /> or <RadzenBadge Text="Enter" /> on a non-expandable item</span></td>
+                    <td><span class="rz-cell-data">Navigate.</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

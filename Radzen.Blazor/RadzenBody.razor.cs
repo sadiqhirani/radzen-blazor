@@ -4,6 +4,8 @@ using Radzen.Blazor.Rendering;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.JSInterop;
+using System.Threading;
+using System.Runtime.ExceptionServices;
 
 namespace Radzen.Blazor
 {
@@ -25,9 +27,8 @@ namespace Radzen.Blazor
         protected override string GetComponentCssClass()
         {
             var classList = ClassList.Create("rz-body")
-                                     .Add("body")
-                                     .Add("body-expanded", Expanded);
-                                     
+                                     .Add("rz-body-expanded", Expanded);
+
             return classList.ToString();
         }
 
@@ -111,7 +112,7 @@ namespace Radzen.Blazor
         {
             if (IsJSRuntimeAvailable && Layout != null)
             {
-                JSRuntime.InvokeVoidAsync("eval", $"document.getElementById('{GetId()}').scrollTop = 0");
+                JSRuntime.InvokeVoidAsync("eval", $"try{{document.getElementById('{GetId()}').scrollTop = 0}}catch(e){{}}");
             }
         }
 

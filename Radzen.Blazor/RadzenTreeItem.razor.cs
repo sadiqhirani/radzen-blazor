@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Radzen.Blazor.Rendering;
 using System;
 using System.Collections;
@@ -13,11 +14,19 @@ namespace Radzen.Blazor
     /// </summary>
     public partial class RadzenTreeItem : IDisposable
     {
+        /// <summary>
+        /// Specifies additional custom attributes that will be rendered by the component.
+        /// </summary>
+        /// <value>The attributes.</value>
+        [Parameter(CaptureUnmatchedValues = true)]
+        public IReadOnlyDictionary<string, object> Attributes { get; set; }
+
         ClassList ContentClassList => ClassList.Create("rz-treenode-content")
-                                               .Add("rz-treenode-content-selected", selected);
-        ClassList IconClassList => ClassList.Create("rz-tree-toggler rzi")
-                                               .Add("rzi-caret-down", expanded)
-                                               .Add("rzi-caret-right", !expanded);
+                                               .Add("rz-treenode-content-selected", selected)
+                                               .Add("rz-state-focused", Tree.IsFocused(this));
+        ClassList IconClassList => ClassList.Create("notranslate rz-tree-toggler rzi")
+                                               .Add("rzi-caret-down", clientExpanded)
+                                               .Add("rzi-caret-right", !clientExpanded);
         /// <summary>
         /// Gets or sets the child content.
         /// </summary>
@@ -36,6 +45,12 @@ namespace Radzen.Blazor
         /// </summary>
         [Parameter]
         public string Text { get; set; }
+
+        /// <summary>
+        /// Gets or sets value indicating if the tree item checkbox can be checked.
+        /// </summary>
+        [Parameter]
+        public bool Checkable { get; set; } = true;
 
         private bool expanded;
 
@@ -114,26 +129,88 @@ namespace Radzen.Blazor
             }
         }
 
+        bool clientExpanded;
         internal async Task Toggle()
         {
+            if (expanded)
+            {
+                clientExpanded = !clientExpanded;
+
+                if (clientExpanded)
+                {
+                    await Expand();
+                }
+                else
+                {
+                    if (items.Count > 0)
+                    {
+                        Tree.RemoveFromCurrentItems(Tree.CurrentItems.IndexOf(items[0]), items.Count);
+                    }
+
+                    if (Tree != null)
+                    {
+                        await Tree.Collapse.InvokeAsync(new TreeEventArgs()
+                        {
+                            Text = Text,
+                            Value = Value
+                        });
+                    }
+                }
+
+                return;
+            }
+
             expanded = !expanded;
+            clientExpanded = !clientExpanded;
 
             if (expanded)
             {
+                await Expand();
+            }
+        }
+
+        internal async Task ExpandCollapse(bool value)
+        {
+            expanded = value;
+            clientExpanded = value;
+
+            if (expanded || clientExpanded)
+            {
+                await Expand();
+            }
+            else
+            {
+                if (items.Count > 0)
+                {
+                    Tree.RemoveFromCurrentItems(Tree.CurrentItems.IndexOf(items[0]), items.Count);
+                }
+
                 if (Tree != null)
                 {
-                    await Tree.ExpandItem(this);
-
-                    if (Tree.SingleExpand)
+                    await Tree.Collapse.InvokeAsync(new TreeEventArgs()
                     {
-                        var siblings = ParentItem?.items ?? Tree.items;
+                        Text = Text,
+                        Value = Value
+                    });
+                }
+            }
+        }
 
-                        foreach (var sibling in siblings)
+        async Task Expand()
+        {
+            if (Tree != null)
+            {
+                await Tree.ExpandItem(this);
+
+                if (Tree.SingleExpand)
+                {
+                    var siblings = ParentItem?.items ?? Tree.items;
+
+                    foreach (var sibling in siblings)
+                    {
+                        if (sibling != this && sibling.expanded)
                         {
-                            if (sibling != this && sibling.expanded)
-                            {
-                                await sibling.Toggle();
-                            }
+                            await sibling.Toggle();
                         }
                     }
                 }
@@ -158,20 +235,21 @@ namespace Radzen.Blazor
         }
 
         /// <inheritdoc />
-        override protected void OnInitialized()
+        override protected async Task OnInitializedAsync()
         {
             expanded = Expanded;
+            clientExpanded = expanded;
 
             if (expanded)
             {
-                Tree?.ExpandItem(this);
+                await Tree?.ExpandItem(this);
             }
 
             selected = Selected;
 
             if (selected)
             {
-                Tree?.SelectItem(this);
+                await Tree?.SelectItem(this);
             }
 
             if (Tree != null && ParentItem == null)
@@ -182,6 +260,10 @@ namespace Radzen.Blazor
             if (ParentItem != null)
             {
                 ParentItem.AddItem(this);
+
+                var currentItems = Tree.items;
+
+                Tree.InsertInCurrentItems(currentItems.IndexOf(ParentItem) + (ParentItem != null ? ParentItem.items.Count : 0), this);
             }
         }
 
@@ -193,8 +275,13 @@ namespace Radzen.Blazor
             if (parameters.DidParameterChange(nameof(Expanded), Expanded))
             {
                 // The Expanded property has changed - update the expanded state
-                expanded = parameters.GetValueOrDefault<bool>(nameof(Expanded));
-                shouldExpand = true;
+                var e = parameters.GetValueOrDefault<bool>(nameof(Expanded));
+                if (expanded != e)
+                {
+                    expanded = e;
+                    clientExpanded = expanded;
+                    shouldExpand = expanded;
+                }
             }
 
             if (parameters.DidParameterChange(nameof(Value), Value))
@@ -222,24 +309,22 @@ namespace Radzen.Blazor
             await base.SetParametersAsync(parameters);
         }
 
-        async Task CheckedChange(bool? value)
+        internal async Task CheckedChange(bool? value)
         {
             if (Tree != null)
             {
-                var checkedValues = GetCheckedValues();
-
                 if (Tree.AllowCheckChildren)
                 {
                     if (value == true)
                     {
                         var valueAndChildren = GetValueAndAllChildValues();
-                        checkedValues = checkedValues.Union(valueAndChildren);
+                        await Tree.SetCheckedValues(GetCheckedValues().Union(valueAndChildren));
                         Tree.SetUncheckedValues(Tree.UncheckedValues.Except(valueAndChildren));
                     }
                     else
                     {
                         var valueAndChildren = GetValueAndAllChildValues();
-                        checkedValues = checkedValues.Except(valueAndChildren);
+                        await Tree.SetCheckedValues(GetCheckedValues().Except(valueAndChildren));
                         Tree.SetUncheckedValues(valueAndChildren.Union(Tree.UncheckedValues));
                     }
                 }
@@ -248,31 +333,29 @@ namespace Radzen.Blazor
                     if (value == true)
                     {
                         var valueWithoutChildren = new[] { Value };
-                        checkedValues = checkedValues.Union(valueWithoutChildren);
+                        await Tree.SetCheckedValues(GetCheckedValues().Union(valueWithoutChildren));
                         Tree.SetUncheckedValues(Tree.UncheckedValues.Except(valueWithoutChildren));
                     }
                     else
                     {
                         var valueWithoutChildren = new[] { Value };
-                        checkedValues = checkedValues.Except(valueWithoutChildren);
+                        await Tree.SetCheckedValues(GetCheckedValues().Except(valueWithoutChildren));
                         Tree.SetUncheckedValues(valueWithoutChildren.Union(Tree.UncheckedValues));
                     }
                 }
 
                 if (Tree.AllowCheckParents)
                 {
-                    checkedValues = UpdateCheckedValuesWithParents(checkedValues, value);
+                    await UpdateCheckedValuesWithParents(value);
                 }
-
-                await Tree.SetCheckedValues(checkedValues);
             }
         }
 
-        bool? IsChecked()
+        internal bool? IsChecked()
         {
             var checkedValues = GetCheckedValues();
 
-            if (HasChildren && IsOneChildUnchecked() && IsOneChildChecked())
+            if (Tree?.AllowCheckParents == true && HasChildren && IsOneChildUnchecked() && IsOneChildChecked())
             {
                 return null;
             }
@@ -285,7 +368,7 @@ namespace Radzen.Blazor
             return Tree.CheckedValues != null ? Tree.CheckedValues : Enumerable.Empty<object>();
         }
 
-        IEnumerable<object> GetAllChildValues(Func<object, bool> predicate = null)
+        internal IEnumerable<object> GetAllChildValues(Func<object, bool> predicate = null)
         {
             var children = items.Concat(items.SelectManyRecursive(i => i.items)).Select(i => i.Value);
 
@@ -321,24 +404,22 @@ namespace Radzen.Blazor
             return GetAllChildValues().Any(i => checkedValues.Contains(i));
         }
 
-        IEnumerable<object> UpdateCheckedValuesWithParents(IEnumerable<object> checkedValues, bool? value)
+        async Task UpdateCheckedValuesWithParents(bool? value)
         {
             var p = ParentItem;
             while (p != null)
             {
-                if (value == false && p.AreAllChildrenUnchecked(i => !object.Equals(i, Value)))
+                if (value == false && (p.AreAllChildrenUnchecked(i => !object.Equals(i, Value)) || p.IsOneChildUnchecked()))
                 {
-                    checkedValues = checkedValues.Except(new object[] { p.Value });
+                    await Tree.SetCheckedValues(GetCheckedValues().Except(new object[] { p.Value }));
                 }
                 else if (value == true && p.AreAllChildrenChecked(i => !object.Equals(i, Value)))
                 {
-                    checkedValues = checkedValues.Union(new object[] { p.Value });
+                    await Tree.SetCheckedValues(GetCheckedValues().Union(new object[] { p.Value }));
                 }
 
                 p = p.ParentItem;
             }
-
-            return checkedValues;
         }
 
         internal bool Contains(RadzenTreeItem child)
@@ -356,6 +437,28 @@ namespace Radzen.Blazor
             }
 
             return false;
+        }
+
+        async Task OnContextMenu(MouseEventArgs args)
+        {
+            await Tree.ItemContextMenu.InvokeAsync(new TreeItemContextMenuEventArgs()
+            {
+                Text = Text,
+                Value = Value,
+                AltKey = args.AltKey,
+                Button = args.Button,
+                Buttons = args.Buttons,
+                ClientX = args.ClientX,
+                ClientY = args.ClientY,
+                CtrlKey = args.CtrlKey,
+                Detail = args.Detail,
+                MetaKey = args.MetaKey,
+                OffsetX = args.OffsetX,
+                OffsetY = args.OffsetY,
+                ScreenX = args.ScreenX,
+                ScreenY = args.ScreenY,
+                ShiftKey = args.ShiftKey
+            });
         }
     }
 }

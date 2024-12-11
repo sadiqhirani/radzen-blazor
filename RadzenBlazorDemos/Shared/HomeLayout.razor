@@ -1,20 +1,19 @@
 ﻿@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Http
 @using Radzen.Blazor
 @inherits LayoutComponentBase
 @inject ExampleService ExampleService
 @inject NavigationManager UriHelper
 @inject IJSRuntime JSRuntime
-@inject IHttpContextAccessor httpContextAccessor
 
-<RadzenDialog />
-<RadzenNotification />
-<RadzenTooltip />
-<RadzenContextMenu />
+<RadzenComponents />
 
-<RadzenContentContainer Name="main">
-    @Body
-</RadzenContentContainer>
+<RadzenLayout>
+    <RadzenBody Class="rz-m-0 rz-p-0 rz-border-radius-0">
+        <RadzenContentContainer Name="main">
+            @Body
+        </RadzenContentContainer>
+    </RadzenBody>
+</RadzenLayout>
 
 @code {
 
@@ -26,15 +25,5 @@
         examples = ExampleService.Examples;
 
         System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-        {
-            var example = ExampleService.FindCurrent(UriHelper.ToAbsoluteUri(UriHelper.Uri));
-
-            await JSRuntime.InvokeVoidAsync("setTitle", ExampleService.TitleFor(example));
-        }
     }
 }

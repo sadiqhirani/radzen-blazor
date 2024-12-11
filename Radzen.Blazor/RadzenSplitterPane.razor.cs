@@ -1,5 +1,9 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
+using Radzen.Blazor.Rendering;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Radzen.Blazor
 {
@@ -19,7 +23,7 @@ namespace Radzen.Blazor
 
         internal bool IsLastResizable
         {
-            get { return Splitter.Panes.Last(o => o.Resizable && !o.Collapsed) == this; }
+            get { return Splitter.Panes.LastOrDefault(o => o.Resizable && !o.GetCollapsed()) == this; }
         }
 
         internal bool IsLast => Splitter.Panes.Count - 1 == Index;
@@ -37,9 +41,9 @@ namespace Radzen.Blazor
             {
                 var paneNext = Next();
 
-                if (Collapsed
+                if (GetCollapsed()
                     || (Index == Splitter.Panes.Count - 2 && !paneNext.IsResizable)
-                    || (IsLastResizable && paneNext != null && paneNext.Collapsed)
+                    || (IsLastResizable && paneNext != null && paneNext.GetCollapsed())
                     )
                     return false;
 
@@ -52,14 +56,14 @@ namespace Radzen.Blazor
         {
             get
             {
-                if (Collapsible && !Collapsed)
+                if (Collapsible && !GetCollapsed())
                     return true;
 
                 var paneNext = Next();
                 if (paneNext == null)
                     return false;
 
-                return paneNext.IsLast && paneNext.Collapsible && paneNext.Collapsed;
+                return paneNext.IsLast && paneNext.Collapsible && paneNext.GetCollapsed();
             }
         }
 
@@ -67,14 +71,14 @@ namespace Radzen.Blazor
         {
             get
             {
-                if (Collapsed)
+                if (GetCollapsed())
                     return true;
 
                 var paneNext = Next();
                 if (paneNext == null)
                     return false;
 
-                return paneNext.IsLast && paneNext.Collapsible && !paneNext.Collapsed;
+                return paneNext.IsLast && paneNext.Collapsible && !paneNext.GetCollapsed();
             }
         }
 
@@ -82,7 +86,7 @@ namespace Radzen.Blazor
         {
             get
             {
-                if (Collapsed)
+                if (GetCollapsed())
                     return "collapsed";
 
                 if (IsLastResizable)
@@ -109,6 +113,7 @@ namespace Radzen.Blazor
         [Parameter]
         public bool Collapsible { get; set; } = true;
 
+        private bool? collapsed;
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="RadzenSplitterPane"/> is collapsed.
         /// </summary>
@@ -149,6 +154,13 @@ namespace Radzen.Blazor
         }
 
         /// <summary>
+        /// Gets or sets the visibility of the splitter bar.
+        /// </summary>
+        /// <value>The visibility of the splitter bar.</value>
+        [Parameter]
+        public bool BarVisible { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the splitter.
         /// </summary>
         /// <value>The splitter.</value>
@@ -166,12 +178,37 @@ namespace Radzen.Blazor
             }
         }
 
+        internal void SetCollapsed(bool value)
+        {
+            collapsed = value;
+        }
+
+        internal bool GetCollapsed()
+        {
+            return collapsed ?? Collapsed;
+        }
 
         /// <inheritdoc />
         public override void Dispose()
         {
             base.Dispose();
             Splitter?.RemovePane(this);
+        }
+
+        /// <inheritdoc />
+        public override async Task SetParametersAsync(ParameterView parameters)
+        {
+            if (parameters.DidParameterChange(nameof(Collapsed), Collapsed))
+            {
+                collapsed = parameters.GetValueOrDefault<bool>(nameof(Collapsed));
+            }
+
+            if (parameters.DidParameterChange(nameof(Size), Size))
+            {
+                SizeRuntine = parameters.GetValueOrDefault<string>(nameof(Size));
+            }
+
+            await base.SetParametersAsync(parameters);
         }
 
         /// <inheritdoc />
@@ -187,6 +224,58 @@ namespace Radzen.Blazor
         protected string GetComponentBarCssClass()
         {
             return $"rz-splitter-bar rz-splitter-bar-{ClassName}";
+        }
+
+        bool preventKeyPress = false;
+        async Task OnKeyPress(KeyboardEventArgs args, bool? expand = null)
+        {
+            var key = args.Code != null ? args.Code : args.Key;
+
+            if (key == "Space" || key == "Enter")
+            {
+                preventKeyPress = true;
+
+                string id = null;
+
+                if (expand == true)
+                {
+                    id = GetId() + "-collapse";
+                    await Splitter.OnExpand(Index);
+                }
+                else if (expand == false)
+                {
+                    id = GetId() + "-expand";
+                    await Splitter.OnCollapse(Index);
+                }
+
+                if (!string.IsNullOrEmpty(id))
+                {
+                    await JSRuntime.InvokeVoidAsync("eval",
+                        "setTimeout(function(){ document.getElementById('" + id + "').focus(); }, 200)");
+                }
+            }
+            else if (key == "ArrowLeft" || key == "ArrowRight" || key == "ArrowUp" || key == "ArrowDown")
+            {
+                preventKeyPress = true;
+
+                var rect = await JSRuntime.InvokeAsync<Rect>("Radzen.clientRect", GetId() + "-resize");
+
+                await Splitter.StartResize(new PointerEventArgs()
+                {
+                    ClientX = rect.Left,
+                    ClientY = rect.Top
+                }, Index);
+
+                await JSRuntime.InvokeVoidAsync("Radzen.resizeSplitter", UniqueID, new MouseEventArgs()
+                {
+                    ClientX = rect.Left + (key == "ArrowLeft" ? -1 : key == "ArrowRight" ? 1 : 0),
+                    ClientY = rect.Top + (key == "ArrowUp" ? -1 : key == "ArrowDown" ? 1 : 0)
+                });
+            }
+            else
+            {
+                preventKeyPress = false;
+            }
         }
     }
 }

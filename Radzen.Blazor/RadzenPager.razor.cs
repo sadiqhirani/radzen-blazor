@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.JSInterop;
 
 namespace Radzen.Blazor
 {
@@ -16,11 +18,111 @@ namespace Radzen.Blazor
     /// </example>
     public partial class RadzenPager : RadzenComponent
     {
+        static readonly IDictionary<HorizontalAlign, string> HorizontalAlignCssClasses = new Dictionary<HorizontalAlign, string>
+        {
+            {HorizontalAlign.Center, "rz-align-center"},
+            {HorizontalAlign.Left, "rz-align-left"},
+            {HorizontalAlign.Right, "rz-align-right"},
+            {HorizontalAlign.Justify, "rz-align-justify"}
+        };
+
         /// <inheritdoc />
         protected override string GetComponentCssClass()
         {
-            return "rz-paginator rz-unselectable-text rz-helper-clearfix";
+            var additionalClasses = new List<string>();
+
+            if (Density == Density.Compact)
+            {
+                additionalClasses.Add("rz-density-compact");
+            }
+
+            return $"rz-pager rz-unselectable-text rz-helper-clearfix {HorizontalAlignCssClasses[HorizontalAlign]} {String.Join(" ", additionalClasses)}";
         }
+
+        /// <summary>
+        /// Gets or sets the pager's first page button's title attribute.
+        /// </summary>
+        [Parameter]
+        public string FirstPageTitle { get; set; } = "First page";
+
+        /// <summary>
+        /// Gets or sets the pager's first page button's aria-label attribute.
+        /// </summary>
+        [Parameter]
+        public string FirstPageAriaLabel { get; set; } = "Go to first page.";
+
+        /// <summary>
+        /// Gets or sets the pager's optional previous page button's label text.
+        /// </summary>
+        [Parameter]
+        public string PrevPageLabel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the pager's previous page button's title attribute.
+        /// </summary>
+        [Parameter]
+        public string PrevPageTitle { get; set; } = "Previous page";
+
+        /// <summary>
+        /// Gets or sets the pager's previous page button's aria-label attribute.
+        /// </summary>
+        [Parameter]
+        public string PrevPageAriaLabel { get; set; } = "Go to previous page.";
+
+        /// <summary>
+        /// Gets or sets the pager's last page button's title attribute.
+        /// </summary>
+        [Parameter]
+        public string LastPageTitle { get; set; } = "Last page";
+
+        /// <summary>
+        /// Gets or sets the pager's last page button's aria-label attribute.
+        /// </summary>
+        [Parameter]
+        public string LastPageAriaLabel { get; set; } = "Go to last page.";
+
+        /// <summary>
+        /// Gets or sets the pager's optional next page button's label text.
+        /// </summary>
+        [Parameter]
+        public string NextPageLabel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the pager's next page button's title attribute.
+        /// </summary>
+        [Parameter]
+        public string NextPageTitle { get; set; } = "Next page";
+
+        /// <summary>
+        /// Gets or sets the pager's next page button's aria-label attribute.
+        /// </summary>
+        [Parameter]
+        public string NextPageAriaLabel { get; set; } = "Go to next page.";
+
+        /// <summary>
+        /// Gets or sets the pager's numeric page number buttons' title attributes.
+        /// </summary>
+        [Parameter]
+        public string PageTitleFormat { get; set; } = "Page {0}";
+
+        /// <summary>
+        /// Gets or sets the pager's numeric page number buttons' aria-label attributes.
+        /// </summary>
+        [Parameter]
+        public string PageAriaLabelFormat { get; set; } = "Go to page {0}.";
+
+        /// <summary>
+        /// Gets or sets the horizontal align.
+        /// </summary>
+        /// <value>The horizontal align.</value>
+        [Parameter]
+        public HorizontalAlign HorizontalAlign { get; set; } = HorizontalAlign.Justify;
+
+        /// <summary>
+        /// Gets or sets a value indicating Pager density.
+        /// </summary>
+        [Parameter]
+        public Density Density { get; set; } = Density.Default;
 
         /// <summary>
         /// Gets or sets the page size.
@@ -42,6 +144,13 @@ namespace Radzen.Blazor
         /// <value>The page size options.</value>
         [Parameter]
         public IEnumerable<int> PageSizeOptions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the page size description text.
+        /// </summary>
+        /// <value>The page size description text.</value>
+        [Parameter]
+        public string PageSizeText { get; set; } = "items per page";
 
         /// <summary>
         /// Gets or sets the pager summary visibility.
@@ -89,8 +198,15 @@ namespace Radzen.Blazor
         /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
         protected bool GetVisible()
         {
-            return Visible && (Count > PageSize || (PageSizeOptions != null && PageSizeOptions.Any()));
+            return Visible && (AlwaysVisible || Count > PageSize || (PageSizeOptions != null && PageSizeOptions.Any()));
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether pager is visible even when not enough data for paging.
+        /// </summary>
+        /// <value><c>true</c> if pager is visible even when not enough data for paging otherwise, <c>false</c>.</value>
+        [Parameter]
+        public bool AlwaysVisible { get; set; }
 
         /// <summary>
         /// Gets or sets the page changed callback.
@@ -128,7 +244,7 @@ namespace Radzen.Blazor
         protected async Task OnPageSizeChanged(object value)
         {
             bool isFirstPage = CurrentPage == 0;
-            bool isLastPage = CurrentPage == numberOfPages - 1;
+            bool isLastPage = CurrentPage == numberOfPages - 1 && numberOfPages > 1;
             int prevSkip = skip;
             PageSize = (int)value;
             await InvokeAsync(Reload);
@@ -204,7 +320,7 @@ namespace Radzen.Blazor
         /// <returns>System.Int32.</returns>
         protected int GetPage()
         {
-            return (int)Math.Floor((decimal)(skip / (PageSize > 0 ? PageSize : 10)));
+            return skip / (PageSize > 0 ? PageSize : 10);
         }
 
         /// <summary>
@@ -219,6 +335,60 @@ namespace Radzen.Blazor
                 skip = page * PageSize;
                 await InvokeAsync(Reload);
                 await PageChanged.InvokeAsync(new PagerEventArgs() { Skip = skip, Top = PageSize, PageIndex = CurrentPage });
+            }
+        }
+
+        async Task OnFirstPageClick()
+        {
+            focusedIndex = -2;
+
+            await FirstPage();
+
+            if (skip == 0)
+            {
+                focusedIndex = focusedIndex + 2;
+            }
+        }
+
+        async Task OnPrevPageClick()
+        {
+            focusedIndex = -1;
+
+            await PrevPage();
+
+            if (skip == 0)
+            {
+                focusedIndex++;
+            }
+        }
+
+        async Task OnPageClick(int i, int startPage)
+        {
+            focusedIndex = i - startPage;
+            await GoToPage(i);
+        }
+
+        async Task OnNextPageClick(int endPage)
+        {
+            focusedIndex = Math.Min(endPage + 1, PageNumbersCount);
+
+            await NextPage();
+
+            if (CurrentPage == numberOfPages - 1)
+            {
+                focusedIndex--;
+            }
+        }
+
+        async Task OnLastPageClick(int endPage)
+        {
+            focusedIndex = Math.Min(endPage + 1, PageNumbersCount) + 1;
+
+            await LastPage();
+
+            if (CurrentPage == numberOfPages - 1)
+            {
+                focusedIndex = focusedIndex - 2;
             }
         }
 
@@ -290,6 +460,108 @@ namespace Radzen.Blazor
                 await InvokeAsync(Reload);
                 await PageChanged.InvokeAsync(new PagerEventArgs() { Skip = skip, Top = PageSize, PageIndex = CurrentPage });
             }
+        }
+
+        bool preventKeyDown = false;
+        int focusedIndex = -3;
+
+        /// <summary>
+        /// Handles the <see cref="E:KeyDown" /> event.
+        /// </summary>
+        /// <param name="args">The <see cref="KeyboardEventArgs"/> instance containing the event data.</param>
+        protected virtual async Task OnKeyDown(KeyboardEventArgs args)
+        {
+            var key = args.Code != null ? args.Code : args.Key;
+
+            var numberOfDisplayedPages = Math.Min(endPage + 1, PageNumbersCount);
+
+            if (key == "ArrowLeft" || key == "ArrowRight")
+            {
+                preventKeyDown = true;
+
+                focusedIndex = Math.Clamp(focusedIndex + (key == "ArrowLeft" ? -1 : 1), -2, numberOfDisplayedPages + 1);
+
+                if (CurrentPage == 0 && focusedIndex < 0)
+                {
+                    focusedIndex = 0;
+                }
+                else if (CurrentPage == numberOfPages - 1 && focusedIndex > numberOfDisplayedPages - 1)
+                {
+                    focusedIndex = numberOfDisplayedPages - 1;
+                }
+            }
+            else if (key == "Space" || key == "Enter")
+            {
+                preventKeyDown = true;
+
+                if (focusedIndex == -2)
+                {
+                    await FirstPage();
+                    shouldFocus = true;
+                }
+                else if (focusedIndex == -1)
+                {
+                    await PrevPage();
+                    shouldFocus = true;
+                }
+                else if (focusedIndex == numberOfDisplayedPages)
+                {
+                    await NextPage();
+                    shouldFocus = true;
+                }
+                else if (focusedIndex == numberOfDisplayedPages + 1)
+                {
+                    await LastPage();
+                    shouldFocus = true;
+                }
+                else 
+                {
+                    await GoToPage(focusedIndex + startPage);
+                    shouldFocus = true;
+                }
+
+                if (CurrentPage == 0 && focusedIndex < 0)
+                {
+                    focusedIndex = 0;
+                }
+                else if (CurrentPage == numberOfPages - 1 && focusedIndex > numberOfDisplayedPages - 1)
+                {
+                    focusedIndex = numberOfDisplayedPages - 1;
+                }
+            }
+            else
+            {
+                preventKeyDown = false;
+                shouldFocus = false;
+            }
+        }
+
+        bool shouldFocus;
+
+        void OnFocus(FocusEventArgs args)
+        {
+            focusedIndex = focusedIndex == -3 ? 0 : focusedIndex;
+
+            if (CurrentPage == 0 && focusedIndex < 0)
+            {
+                focusedIndex = 0;
+            }
+            else if (CurrentPage == numberOfPages - 1 && focusedIndex > numberOfPages - 1)
+            {
+                focusedIndex = numberOfPages - 1;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            await base.OnAfterRenderAsync(firstRender);
+
+            if (shouldFocus)
+            {
+                shouldFocus = false;
+                await JSRuntime.InvokeVoidAsync("Radzen.focusElement", GetId());
+            }    
         }
     }
 }

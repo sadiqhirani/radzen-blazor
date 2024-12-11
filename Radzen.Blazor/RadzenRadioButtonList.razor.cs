@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Radzen.Blazor.Rendering;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Radzen.Blazor
 {
@@ -27,7 +29,7 @@ namespace Radzen.Blazor
                                                                             .AddDisabled(Disabled || item.Disabled);
 
         ClassList IconClassList(RadzenRadioButtonListItem<TValue> item) => ClassList.Create("rz-radiobutton-icon")
-                                                                            .Add("rzi rzi-circle-on", IsSelected(item));
+                                                                            .Add("notranslate rzi rzi-circle-on", IsSelected(item));
         /// <summary>
         /// Gets or sets the value property.
         /// </summary>
@@ -189,6 +191,23 @@ namespace Radzen.Blazor
         public void Refresh()
         {
             StateHasChanged();
+        }
+
+        bool preventKeyPress = true;
+        async Task OnKeyPress(KeyboardEventArgs args, Task task)
+        {
+            var key = args.Code != null ? args.Code : args.Key;
+
+            if (key == "Space" || key == "Enter")
+            {
+                preventKeyPress = true;
+
+                await task;
+            }
+            else
+            {
+                preventKeyPress = false;
+            }
         }
     }
 }

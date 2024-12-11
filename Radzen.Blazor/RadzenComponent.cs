@@ -22,7 +22,7 @@ namespace Radzen
         /// <summary>
         /// Gets a reference to the HTML element rendered by the component.
         /// </summary>
-        public ElementReference Element { get; internal set; }
+        public ElementReference Element { get; protected internal set; }
 
         /// <summary>
         /// A callback that will be invoked when the user hovers the component. Commonly used to display a tooltip via 
@@ -119,7 +119,7 @@ namespace Radzen
         /// Gets the unique identifier. 
         /// </summary>
         /// <returns>Returns the <c>id</c> attribute (if specified) or generates a random one.</returns>
-        protected string GetId()
+        protected virtual string GetId()
         {
             if (Attributes != null && Attributes.TryGetValue("id", out var id) && !string.IsNullOrEmpty(Convert.ToString(@id)))
             {
@@ -233,17 +233,17 @@ namespace Radzen
                 {
                     if (ContextMenu.HasDelegate)
                     {
-                        await JSRuntime.InvokeVoidAsync("Radzen.addContextMenu", UniqueID, Reference);
+                        await JSRuntime.InvokeVoidAsync("Radzen.addContextMenu", GetId(), Reference);
                     }
 
                     if (MouseEnter.HasDelegate)
                     {
-                        await JSRuntime.InvokeVoidAsync("Radzen.addMouseEnter", UniqueID, Reference);
+                        await JSRuntime.InvokeVoidAsync("Radzen.addMouseEnter", GetId(), Reference);
                     }
 
                     if (MouseLeave.HasDelegate)
                     {
-                        await JSRuntime.InvokeVoidAsync("Radzen.addMouseLeave", UniqueID, Reference);
+                        await JSRuntime.InvokeVoidAsync("Radzen.addMouseLeave", GetId(), Reference);
                     }
                 }
             }
@@ -286,11 +286,15 @@ namespace Radzen
             }
         }
 
+        internal bool disposed = false;
+
         /// <summary>
         /// Detaches event handlers and disposes <see cref="Reference" />.
         /// </summary>
         public virtual void Dispose()
         {
+            disposed = true;
+
             reference?.Dispose();
             reference = null;
 

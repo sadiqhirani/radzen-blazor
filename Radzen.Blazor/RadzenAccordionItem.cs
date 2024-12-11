@@ -23,6 +23,13 @@ namespace Radzen.Blazor
         public string Icon { get; set; }
 
         /// <summary>
+        /// Gets or sets the icon color.
+        /// </summary>
+        /// <value>The icon color.</value>
+        [Parameter]
+        public string IconColor { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether this <see cref="RadzenAccordionItem"/> is selected.
         /// </summary>
         /// <value><c>true</c> if selected; otherwise, <c>false</c>.</value>
@@ -30,12 +37,46 @@ namespace Radzen.Blazor
         public bool Selected { get; set; }
 
         /// <summary>
+        /// Gets or sets the title attribute of the expand button.
+        /// </summary>
+        /// <value>The title attribute value of the expand button.</value>
+        [Parameter]
+        public string ExpandTitle { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the title attribute of the collapse button.
+        /// </summary>
+        /// <value>The title attribute value of the collapse button.</value>
+        [Parameter]
+        public string CollapseTitle { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the aria-label attribute of the expand button.
+        /// </summary>
+        /// <value>The aria-label attribute value of the expand button.</value>
+        [Parameter]
+        public string ExpandAriaLabel { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the aria-label attribute of the collapse button.
+        /// </summary>
+        /// <value>The aria-label attribute value of the collapse button.</value>
+        [Parameter]
+        public string CollapseAriaLabel { get; set; }
+        
+        /// <summary>
         /// Gets or sets the child content.
         /// </summary>
         /// <value>The child content.</value>
         [Parameter]
         public RenderFragment ChildContent { get; set; }
 
+        /// <summary>
+        /// Gets or sets the header content.
+        /// </summary>
+        /// <value>The header content.</value>
+        [Parameter]
+        public RenderFragment Template { get; set; }
 
         bool _visible = true;
         /// <summary>
@@ -54,7 +95,10 @@ namespace Radzen.Blazor
                 if (_visible != value)
                 {
                     _visible = value;
-                    Accordion.Refresh();
+                    if (Accordion != null)
+                    {
+                        Accordion.Refresh();
+                    }
                 }
             }
         }
@@ -82,6 +126,17 @@ namespace Radzen.Blazor
             }
         }
 
+        bool? selected;
+        internal bool GetSelected()
+        {
+            return selected ?? Selected;
+        }
+
+        internal void SetSelected(bool? value)
+        {
+            selected = value;
+        }
+
         /// <summary>
         /// Set parameters as an asynchronous operation.
         /// </summary>
@@ -91,7 +146,7 @@ namespace Radzen.Blazor
         {
             if (parameters.DidParameterChange(nameof(Selected), Selected))
             {
-                Accordion?.SelectItem(this);
+                Accordion?.SelectItem(this, parameters.GetValueOrDefault<bool>(nameof(Selected)));
             }
 
             await base.SetParametersAsync(parameters);
@@ -105,6 +160,22 @@ namespace Radzen.Blazor
             base.Dispose();
 
             Accordion?.RemoveItem(this);
+        }
+
+        internal string GetItemId()
+        {
+            return GetId();
+        }
+
+        internal string GetItemCssClass()
+        {
+            return $"{GetCssClass()} {(Accordion.IsFocused(this) ? "rz-state-focused" : "")}".Trim();
+        }
+
+        /// <inheritdoc />
+        protected override string GetComponentCssClass()
+        {
+            return "rz-accordion-header";
         }
     }
 }

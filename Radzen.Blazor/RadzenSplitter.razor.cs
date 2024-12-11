@@ -94,13 +94,13 @@ namespace Radzen.Blazor
             }
         }
 
-        internal Task ResizeExec(MouseEventArgs args, int paneIndex)
+        internal Task StartResize(PointerEventArgs args, int paneIndex)
         {
             var pane = Panes[paneIndex];
             if (!pane.Resizable)
                 return Task.CompletedTask;
 
-            var paneNextResizable = Panes.Skip(paneIndex + 1).FirstOrDefault(o => o.Resizable && !o.Collapsed);
+            var paneNextResizable = Panes.Skip(paneIndex + 1).FirstOrDefault(o => o.Resizable && !o.GetCollapsed());
 
 
             return JSRuntime.InvokeVoidAsync("Radzen.startSplitterResize",
@@ -116,6 +116,24 @@ namespace Radzen.Blazor
         }
 
         /// <summary>
+        /// Value indicating if the splitter is resizing.
+        /// </summary>
+        public bool IsResizing { get; private set; }
+
+        /// <summary>
+        /// Called on pane resizing.
+        /// </summary>
+        [JSInvokable("RadzenSplitter.OnPaneResizing")]
+        public async Task OnPaneResizing()
+        {
+            IsResizing = true;
+
+            StateHasChanged();
+
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
         /// Called when pane resized.
         /// </summary>
         /// <param name="paneIndex">Index of the pane.</param>
@@ -125,6 +143,8 @@ namespace Radzen.Blazor
         [JSInvokable("RadzenSplitter.OnPaneResized")]
         public async Task OnPaneResized(int paneIndex, double sizeNew, int? paneNextIndex, double? sizeNextNew)
         {
+            IsResizing = false;
+
             var pane = Panes[paneIndex];
 
             if (Resize.HasDelegate)
@@ -157,14 +177,16 @@ namespace Radzen.Blazor
 
                 paneNext.SizeRuntine = sizeNextNew.Value.ToString("0.##", CultureInfo.InvariantCulture) + "%";
             }
+
+            StateHasChanged();
         }
 
-        internal async Task CollapseExec(object args, int paneIndex, string paneId)
+        internal async Task OnCollapse(int paneIndex)
         {
             var pane = Panes[paneIndex];
             var paneNext = pane.Next();
 
-            if (paneNext != null && paneNext.Collapsible && paneNext.IsLast && paneNext.Collapsed)
+            if (paneNext != null && paneNext.Collapsible && paneNext.IsLast && paneNext.GetCollapsed())
             {
                 if (Expand.HasDelegate)
                 {
@@ -174,7 +196,7 @@ namespace Radzen.Blazor
                         return;
                 }
 
-                paneNext.Collapsed = false;
+                paneNext.SetCollapsed(false);
             }
             else
             {
@@ -186,18 +208,18 @@ namespace Radzen.Blazor
                         return;
                 }
 
-                pane.Collapsed = true;
+                pane.SetCollapsed(true);
             }
 
             await InvokeAsync(StateHasChanged);
         }
 
-        internal async Task ExpandExec(MouseEventArgs args, int paneIndex, string paneId)
+        internal async Task OnExpand(int paneIndex)
         {
             var pane = Panes[paneIndex];
             var paneNext = pane.Next();
 
-            if (paneNext != null && paneNext.Collapsible && paneNext.IsLast && !pane.Collapsed)
+            if (paneNext != null && paneNext.Collapsible && paneNext.IsLast && !pane.GetCollapsed())
             {
                 if (Collapse.HasDelegate)
                 {
@@ -207,7 +229,7 @@ namespace Radzen.Blazor
                         return;
                 }
 
-                paneNext.Collapsed = true;
+                paneNext.SetCollapsed(true);
             }
             else
             {
@@ -219,7 +241,7 @@ namespace Radzen.Blazor
                         return;
                 }
 
-                pane.Collapsed = false;
+                pane.SetCollapsed(false);
             }
 
             await InvokeAsync(StateHasChanged);
@@ -229,7 +251,7 @@ namespace Radzen.Blazor
         /// <inheritdoc />
         protected override string GetComponentCssClass()
         {
-            return $"rz-splitter rz-splitter-{Enum.GetName(typeof(Orientation), Orientation).ToLower()}";
+            return $"rz-splitter rz-splitter-{Enum.GetName(typeof(Orientation), Orientation).ToLowerInvariant()}";
         }
 
         /// <summary>

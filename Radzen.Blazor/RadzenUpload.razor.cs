@@ -35,22 +35,30 @@ namespace Radzen.Blazor
     public partial class RadzenUpload : RadzenComponent
     {
         /// <summary>
+        /// Gets or sets the text.
+        /// </summary>
+        /// <value>The text.</value>
+        [Parameter]
+        public string ImageAlternateText { get; set; } = "image";
+
+        /// <summary>
+        /// Specifies additional custom attributes that will be rendered by the input.
+        /// </summary>
+        /// <value>The attributes.</value>
+        [Parameter]
+        public IReadOnlyDictionary<string, object> InputAttributes { get; set; }
+
+        /// <summary>
         /// Gets file input reference.
         /// </summary>
         protected ElementReference fileUpload;
-        string _Id;
-        string Id
-        {
-            get
-            {
-                if (_Id == null)
-                {
-                    _Id = $"{Guid.NewGuid()}";
-                }
 
-                return _Id;
-            }
-        }
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        /// <value>The name.</value>
+        [Parameter]
+        public string Name { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="RadzenUpload"/> upload is automatic.
@@ -67,11 +75,25 @@ namespace Radzen.Blazor
         public string ChooseText { get; set; } = "Choose";
 
         /// <summary>
+        /// Gets or sets the choose button text.
+        /// </summary>
+        /// <value>The choose button text.</value>
+        [Parameter]
+        public string DeleteText { get; set; } = "Delete";
+
+        /// <summary>
         /// Gets or sets the URL.
         /// </summary>
         /// <value>The URL.</value>
         [Parameter]
         public string Url { get; set; }
+
+        /// <summary>
+        /// Gets or sets the parameter name. If not set 'file' parameter name will be used for single file and 'files' for multiple files.
+        /// </summary>
+        /// <value>The parameter name.</value>
+        [Parameter]
+        public string ParameterName { get; set; }
 
         /// <summary>
         /// Gets or sets the accepted MIME types.
@@ -88,6 +110,27 @@ namespace Radzen.Blazor
         public bool Multiple { get; set; }
 
         /// <summary>
+        /// Gets or sets the icon.
+        /// </summary>
+        /// <value>The icon.</value>
+        [Parameter]
+        public string Icon { get; set; }
+
+        /// <summary>
+        /// Gets or sets the icon color.
+        /// </summary>
+        /// <value>The icon color.</value>
+        [Parameter]
+        public string IconColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of files.
+        /// </summary>
+        /// <value>The maximum number of files.</value>
+        [Parameter]
+        public int MaxFileCount { get; set; } = 10;
+
+        /// <summary>
         /// Gets or sets a value indicating whether this <see cref="RadzenUpload"/> is disabled.
         /// </summary>
         /// <value><c>true</c> if disabled; otherwise, <c>false</c>.</value>
@@ -98,14 +141,14 @@ namespace Radzen.Blazor
         /// Gets the choose class list.
         /// </summary>
         /// <value>The choose class list.</value>
-        ClassList ChooseClassList => ClassList.Create("rz-fileupload-choose rz-button btn-secondary")
+        ClassList ChooseClassList => ClassList.Create("rz-fileupload-choose rz-button")
                                               .AddDisabled(Disabled);
 
         /// <summary>
         /// Gets the button class list.
         /// </summary>
         /// <value>The button class list.</value>
-        ClassList ButtonClassList => ClassList.Create("rz-button rz-button-icon-only btn-light")
+        ClassList ButtonClassList => ClassList.Create("rz-button rz-button-icon-only rz-base rz-shade-default")
                                               .AddDisabled(Disabled);
 
         /// <summary>
@@ -120,7 +163,7 @@ namespace Radzen.Blazor
         /// </summary>
         public async Task Upload()
         {
-            await JSRuntime.InvokeAsync<string>("Radzen.upload", fileUpload, Url, Multiple);
+            await JSRuntime.InvokeAsync<string>("Radzen.upload", fileUpload, Url, Multiple, false, ParameterName);
         }
 
         readonly IDictionary<string, string> headers = new Dictionary<string, string>();
@@ -173,7 +216,7 @@ namespace Radzen.Blazor
 
                 if (Visible)
                 {
-                    await JSRuntime.InvokeVoidAsync("Radzen.uploads", Reference, Id);
+                    await JSRuntime.InvokeVoidAsync("Radzen.uploads", Reference, Name ?? GetId());
                 }
             }
         }
@@ -231,14 +274,43 @@ namespace Radzen.Blazor
         }
 
         /// <summary>
+        /// Clear selected file(s) from the upload selection
+        /// </summary>
+        public async System.Threading.Tasks.Task ClearFiles()
+        {
+            while(files.Count > 0)
+            {
+                await OnRemove(files[0], false);
+            }
+
+            await Change.InvokeAsync(new UploadChangeEventArgs() { Files = files.Select(f => new FileInfo() { Name = f.Name, Size = f.Size }).ToList() });
+        }
+
+        /// <summary>
+        /// Called on file remove.
+        /// </summary>
+        /// <param name="fileName">The name of the file to remove.</param>
+        /// <param name="ignoreCase">Specify true is file name casing should be ignored (default: false)</param>
+        public async System.Threading.Tasks.Task RemoveFile(string fileName, bool ignoreCase = false)
+        {
+            var comparisonMethod = ignoreCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            var fileInfo = files.FirstOrDefault(f => string.Equals(f.Name, fileName, comparisonMethod));
+            if (fileInfo != null)
+            {
+                await OnRemove(fileInfo);
+            }
+        }
+
+        /// <summary>
         /// Called on file remove.
         /// </summary>
         /// <param name="file">The file.</param>
-        protected async System.Threading.Tasks.Task OnRemove(PreviewFileInfo file)
+        /// <param name="fireChangeEvent">If the linked <see cref="Change" /> event should be fired as a result of this removal (default: true)</param>
+        protected async System.Threading.Tasks.Task OnRemove(PreviewFileInfo file, bool fireChangeEvent = true)
         {
             files.Remove(file);
             await JSRuntime.InvokeVoidAsync("Radzen.removeFileFromUpload", fileUpload, file.Name);
-            await Change.InvokeAsync(new UploadChangeEventArgs() { Files = files.Select(f => new FileInfo() { Name = f.Name, Size = f.Size }).ToList() });
+            if (fireChangeEvent) await Change.InvokeAsync(new UploadChangeEventArgs() { Files = files.Select(f => new FileInfo() { Name = f.Name, Size = f.Size }).ToList() });
         }
 
         /// <summary>
@@ -248,6 +320,11 @@ namespace Radzen.Blazor
         [JSInvokable("RadzenUpload.OnChange")]
         public async System.Threading.Tasks.Task OnChange(IEnumerable<PreviewFileInfo> files)
         {
+            if (files == null || !files.Any())
+            {
+                return;
+            }
+
             this.files = files.ToList();
 
             await Change.InvokeAsync(new UploadChangeEventArgs() { Files = files.Select(f => new FileInfo() { Name = f.Name, Size = f.Size }).ToList() });
@@ -262,18 +339,23 @@ namespace Radzen.Blazor
         /// <param name="loaded">The loaded.</param>
         /// <param name="total">The total.</param>
         /// <param name="files">The files.</param>
+        /// <param name="cancel">The cancelled state.</param>
         [JSInvokable("RadzenUpload.OnProgress")]
-        public async System.Threading.Tasks.Task OnProgress(int progress, int loaded, int total, IEnumerable<FileInfo> files)
+        public async System.Threading.Tasks.Task<bool> OnProgress(int progress, long loaded, long total, IEnumerable<FileInfo> files, bool cancel)
         {
-            await Progress.InvokeAsync(new UploadProgressArgs() { Progress = progress, Loaded = loaded, Total = total, Files = files });
+            var args = new UploadProgressArgs() { Progress = progress, Loaded = loaded, Total = total, Files = files, Cancel = cancel };
+            await Progress.InvokeAsync(args); ;
+
+            return args.Cancel;
         }
 
         /// <summary>
         /// Called when upload is complete.
         /// </summary>
         /// <param name="response">The response.</param>
+        /// <param name="cancelled">Flag indicating if the upload was cancelled</param>
         [JSInvokable("RadzenUpload.OnComplete")]
-        public async System.Threading.Tasks.Task OnComplete(string response)
+        public async System.Threading.Tasks.Task OnComplete(string response, bool cancelled)
         {
             System.Text.Json.JsonDocument doc = null;
 
@@ -289,7 +371,7 @@ namespace Radzen.Blazor
                 }
             }
 
-            await Complete.InvokeAsync(new UploadCompleteEventArgs() { RawResponse = response, JsonResponse = doc });
+            await Complete.InvokeAsync(new UploadCompleteEventArgs() { RawResponse = response, JsonResponse = doc, Cancelled = cancelled });
         }
 
         /// <summary>
@@ -306,6 +388,23 @@ namespace Radzen.Blazor
         protected override string GetComponentCssClass()
         {
             return "rz-fileupload";
+        }
+
+        async Task OnInputChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs args)
+        {
+            if (Disabled)
+            {
+                return;
+            }
+
+            var files = Multiple ? args.GetMultipleFiles(MaxFileCount).Select(f => new FileInfo(f))
+                : new FileInfo[] { new FileInfo (args.File) };
+
+            this.files = files.Select(f => new PreviewFileInfo() { Name = f.Name, Size = f.Size  }).ToList();
+
+            await Change.InvokeAsync(new UploadChangeEventArgs() { Files = files });
+
+            await InvokeAsync(StateHasChanged);
         }
     }
 }

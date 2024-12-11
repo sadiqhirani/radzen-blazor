@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Radzen.Blazor.Rendering;
 using System;
@@ -27,9 +28,22 @@ namespace Radzen.Blazor
     /// </example>
     public partial class RadzenSelectBar<TValue> : FormComponent<TValue>, IRadzenSelectBar
     {
-        ClassList ButtonClassList(RadzenSelectBarItem item) => ClassList.Create("rz-button rz-button-text-only")
+        private string getButtonSize()
+        {
+            return Size == ButtonSize.Medium ? "md" : Size == ButtonSize.Large ? "lg" : Size == ButtonSize.Small ? "sm" : "xs";
+        }
+
+        /// <summary>
+        /// Gets or sets the size.
+        /// </summary>
+        /// <value>The size.</value>
+        [Parameter]
+        public ButtonSize Size { get; set; } = ButtonSize.Medium;
+
+
+        ClassList ButtonClassList(RadzenSelectBarItem item) => ClassList.Create($"rz-button rz-button-{getButtonSize()} rz-button-text-only")
                             .Add("rz-state-active", IsSelected(item))
-                            .AddDisabled(Disabled);
+                            .AddDisabled(Disabled || item.Disabled);
 
         /// <summary>
         /// Gets or sets the value property.
@@ -126,7 +140,10 @@ namespace Radzen.Blazor
             if (items.Contains(item))
             {
                 items.Remove(item);
-                try { InvokeAsync(StateHasChanged); } catch { }
+                if (!disposed)
+                {
+                    try { InvokeAsync(StateHasChanged); } catch { }
+                }
             }
         }
 
@@ -137,19 +154,14 @@ namespace Radzen.Blazor
         /// <returns><c>true</c> if the specified item is selected; otherwise, <c>false</c>.</returns>
         protected bool IsSelected(RadzenSelectBarItem item)
         {
-            if (Value != null)
+            if (Multiple)
             {
-                if (Multiple)
-                {
-                    return ((IEnumerable)Value).Cast<object>().Contains(item.Value);
-                }
-                else
-                {
-                    return object.Equals(Value, item.Value);
-                }
+                return Value != null && ((IEnumerable)Value).Cast<object>().Contains(item.Value);
             }
-
-            return false;
+            else
+            {
+                return object.Equals(Value, item.Value);
+            }
         }
 
         /// <summary>
@@ -170,14 +182,14 @@ namespace Radzen.Blazor
         /// <param name="item">The item.</param>
         protected async System.Threading.Tasks.Task SelectItem(RadzenSelectBarItem item)
         {
-            if (Disabled)
+            if (Disabled || item.Disabled)
                 return;
 
             if (Multiple)
             {
                 var type = typeof(TValue).IsGenericType ? typeof(TValue).GetGenericArguments()[0] : typeof(TValue);
 
-                var selectedValues = Value != null ? ((IEnumerable)Value).AsQueryable().Cast(type).AsEnumerable().ToList() : new List<dynamic>();
+                var selectedValues = Value != null ? QueryableExtension.ToList(((IEnumerable)Value).AsQueryable().Cast(type)) : new List<dynamic>();
 
                 if (!selectedValues.Contains(item.Value))
                 {
@@ -200,6 +212,31 @@ namespace Radzen.Blazor
             await Change.InvokeAsync(Value);
 
             StateHasChanged();
+        }
+
+        /// <summary>
+        /// Refreshes this instance.
+        /// </summary>
+        public void Refresh()
+        {
+            StateHasChanged();
+        }
+
+        bool preventKeyPress = true;
+        async Task OnKeyPress(KeyboardEventArgs args, Task task)
+        {
+            var key = args.Code != null ? args.Code : args.Key;
+
+            if (key == "Space" || key == "Enter")
+            {
+                preventKeyPress = true;
+
+                await task;
+            }
+            else
+            {
+                preventKeyPress = false;
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.AspNetCore.Components.Web;
+using System.Threading.Tasks;
 
 namespace Radzen.Blazor
 {
@@ -13,6 +15,13 @@ namespace Radzen.Blazor
         {
             return "rz-navigation-item";
         }
+
+        /// <summary>
+        /// Gets or sets the text.
+        /// </summary>
+        /// <value>The text.</value>
+        [Parameter]
+        public string ImageAlternateText { get; set; } = "image";
 
         /// <summary>
         /// Gets or sets the target.
@@ -29,11 +38,32 @@ namespace Radzen.Blazor
         public string Path { get; set; }
 
         /// <summary>
+        /// Gets or sets the navigation link match.
+        /// </summary>
+        /// <value>The navigation link match.</value>
+        [Parameter]
+        public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+
+        /// <summary>
         /// Gets or sets the icon.
         /// </summary>
         /// <value>The icon.</value>
         [Parameter]
         public string Icon { get; set; }
+
+        /// <summary>
+        /// Gets or sets the icon color.
+        /// </summary>
+        /// <value>The icon color.</value>
+        [Parameter]
+        public string IconColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the image.
+        /// </summary>
+        /// <value>The image.</value>
+        [Parameter]
+        public string Image { get; set; }
 
         /// <summary>
         /// Gets or sets the text.
@@ -67,6 +97,34 @@ namespace Radzen.Blazor
             {
                 await Menu.Click.InvokeAsync(this);
             }
+        }
+
+        RadzenProfileMenu _parent;
+        /// <summary>
+        /// Gets or sets the parent.
+        /// </summary>
+        /// <value>The parent.</value>
+        [CascadingParameter]
+        public RadzenProfileMenu Parent
+        {
+            get
+            {
+                return _parent;
+            }
+            set
+            {
+                if (_parent != value)
+                {
+                    _parent = value;
+
+                    _parent.AddItem(this);
+                }
+            }
+        }
+
+        internal string GetItemCssClass()
+        {
+            return $"{GetCssClass()} {(Parent.IsFocused(this) ? "rz-state-focused" : "")}".Trim();
         }
     }
 }

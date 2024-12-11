@@ -15,6 +15,12 @@ namespace Radzen.Blazor
         /// </summary>
         /// <value>The title.</value>
         public abstract string Title { get; }
+
+        /// <summary>
+        /// Gets the icon of the view. It is displayed in the view switching UI.
+        /// </summary>
+        public abstract string Icon { get; }
+
         /// <summary>
         /// Gets the text of the view. It is displayed in the view switching UI.
         /// </summary>
@@ -27,6 +33,7 @@ namespace Radzen.Blazor
         /// <value>The scheduler.</value>
         [CascadingParameter]
         public IScheduler Scheduler { get; set; }
+
 
         /// <summary>
         /// Disposes this instance.
@@ -82,5 +89,15 @@ namespace Radzen.Blazor
         /// </summary>
         /// <value>The end date.</value>
         public abstract DateTime EndDate { get; }
+
+        /// <summary>
+        /// Handles appointent move event.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public async Task OnAppointmentMove(SchedulerAppointmentMoveEventArgs data)
+        {
+            await Scheduler.AppointmentMove.InvokeAsync(data);
+        }
     }
 }

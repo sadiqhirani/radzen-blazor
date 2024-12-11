@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using System.Collections.Generic;
 
 namespace Radzen.Blazor
 {
@@ -8,6 +9,13 @@ namespace Radzen.Blazor
     /// <typeparam name="TValue">The type of the value.</typeparam>
     public class RadzenRadioButtonListItem<TValue> : RadzenComponent
     {
+        /// <summary>
+        /// Specifies additional custom attributes that will be rendered by the input.
+        /// </summary>
+        /// <value>The attributes.</value>
+        [Parameter]
+        public IReadOnlyDictionary<string, object> InputAttributes { get; set; }
+
         private string _text;
 
         /// <summary>
@@ -32,6 +40,13 @@ namespace Radzen.Blazor
                 }
             }
         }
+
+        /// <summary>
+        /// Gets or sets the template.
+        /// </summary>
+        /// <value>The template.</value>
+        [Parameter]
+        public RenderFragment<RadzenRadioButtonListItem<TValue>> Template { get; set; }
 
         /// <summary>
         /// Gets or sets the value.
@@ -97,6 +112,22 @@ namespace Radzen.Blazor
         internal void SetVisible(bool value)
         {
             Visible = value;
+        }
+
+        internal string GetItemId()
+        {
+            return GetId();
+        }
+
+        internal string GetItemCssClass()
+        {
+            return GetCssClass();
+        }
+
+        /// <inheritdoc />
+        protected override string GetComponentCssClass()
+        {
+            return "rz-radio-btn";
         }
     }
 }
